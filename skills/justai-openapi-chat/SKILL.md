@@ -1,6 +1,7 @@
 ---
 name: justai-openapi-chat
 description: Call the JustAI openapi async chat endpoints and return structured JSON results. Use when Codex needs to invoke the deployed JustAI agent for marketing plans, Xiaohongshu notes, image generation, collect-info turns, confirm-info card generation, or follow-up turns through `/openapi/agent/chat_submit` and `/openapi/agent/chat_result` instead of reasoning locally.
+allowed-tools: Bash
 ---
 
 # JustAI OpenAPI Chat
@@ -13,6 +14,8 @@ Use the bundled scripts to inspect available projects and skills, then call the 
 4. `chat_result.py` polls `chat_result` until the task is `completed` or `failed`
 
 This keeps the interface stable for slower branches such as card generation, plan generation, notes generation, and image generation.
+
+When running inside Claude Code, `${CLAUDE_SKILL_DIR}` resolves to this skill directory. Use that path when invoking the bundled scripts. In Codex or a plain shell, run the same scripts from the installed skill directory.
 
 ## Workflow
 
@@ -41,32 +44,32 @@ This keeps the interface stable for slower branches such as card generation, pla
 List projects:
 
 ```bash
-python3 scripts/list_projects.py
+python3 "${CLAUDE_SKILL_DIR}/scripts/list_projects.py"
 ```
 
 List skills:
 
 ```bash
-python3 scripts/list_skills.py
+python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py"
 ```
 
 Run a new turn:
 
 ```bash
-python3 scripts/chat.py --message "帮我做一份小红书运营方案"
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --message "帮我做一份小红书运营方案"
 ```
 
 Poll the result:
 
 ```bash
-python3 scripts/chat_result.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" \
   --conversation-id "existing-conversation-id"
 ```
 
 Continue an existing turn:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --conversation-id "existing-conversation-id" \
   --message "继续展开第二部分"
 ```
@@ -74,7 +77,7 @@ python3 scripts/chat.py \
 Continue after a confirmation card:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --conversation-id "existing-conversation-id" \
   --message "这些信息没问题，继续生成方案"
 ```
@@ -82,7 +85,7 @@ python3 scripts/chat.py \
 Revise a confirmation card in natural language:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --conversation-id "existing-conversation-id" \
   --message "预算改成3万，目标用户改成25到30岁女性，其他不变，请更新资料卡片"
 ```
@@ -90,7 +93,7 @@ python3 scripts/chat.py \
 Run a turn scoped to a selected project/folder:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --project-id "fld_demo" \
   --message "请参考这个资料库里的内容，帮我写一篇港理工校园生活图文笔记"
 ```
@@ -98,7 +101,7 @@ python3 scripts/chat.py \
 Run a turn with a manually selected skill:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --skill-id "skill_demo" \
   --message "使用这个技能继续分析"
 ```
@@ -106,7 +109,7 @@ python3 scripts/chat.py \
 Run a turn with both selected project and skill:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --project-id "fld_demo" \
   --skill-id "skill_demo" \
   --message "优先参考这个资料库并使用这个 skill 帮我生成方案"
@@ -115,14 +118,14 @@ python3 scripts/chat.py \
 Override the timeout for slower branches:
 
 ```bash
-python3 scripts/chat.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
   --message "我是做敏感肌护肤的品牌，先帮我整理资料卡片"
 ```
 
 Control polling interval:
 
 ```bash
-python3 scripts/chat_result.py \
+python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" \
   --conversation-id "existing-conversation-id" \
   --poll-interval 2 \
   --timeout 300
