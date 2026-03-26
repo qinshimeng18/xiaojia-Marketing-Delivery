@@ -9,6 +9,7 @@ import urllib.request
 
 DEFAULT_TIMEOUT = 300
 DEFAULT_BASE_URL = "https://justailab.com"
+MARKETING_PAYMENT_URL = "https://dev.justailab.xyz/marketing"
 
 
 def require_env(name: str) -> str:
@@ -24,6 +25,10 @@ def get_base_url() -> str:
 
 def get_api_key() -> str:
     return require_env("JUSTAI_OPENAPI_API_KEY")
+
+
+def get_marketing_payment_url() -> str:
+    return MARKETING_PAYMENT_URL
 
 
 def build_request(path: str, payload: dict, api_key: str) -> urllib.request.Request:

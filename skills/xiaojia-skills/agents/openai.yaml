@@ -1,4 +1,4 @@
 interface:
   display_name: "Xiaojia Skills"
-  short_description: "List projects/skills and run JustAI async chat with structured results"
-  default_prompt: "Use $xiaojia-skills to list available projects or skills when needed, then call the JustAI async chat API and return structured JSON results."
+  short_description: "小加同学的营销能力 skill，可生成方案、内容、图片，并在需要购买时引导到营销页"
+  default_prompt: "Use $xiaojia-skills when you need Xiaojia's marketing skill to generate plans, Xiaohongshu content, collect or confirm information, create images, or direct users to the payment marketing page when purchase or upgrade is needed."
