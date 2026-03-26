@@ -56,7 +56,13 @@ cp -R /tmp/xiaojia-skills/skills/xiaojia-skills ~/.codex/skills/
 
 ## 前置要求
 
-默认会请求生产地址 `https://justailab.com`，所以最少只需要配置：
+默认会请求生产地址 `https://justailab.com`。
+
+如果 `JUSTAI_OPENAPI_API_KEY` 已经存在，skill 会直接复用它。
+
+If `JUSTAI_OPENAPI_API_KEY` is missing, the skill will start the login flow automatically, print a `/login?login_token=...` URL for the user to open, poll for login completion, and persist the returned API key into the detected shell rc file so later runs can reuse it without asking again。
+
+你也可以手动预先配置：
 
 ```bash
 export JUSTAI_OPENAPI_API_KEY="your-api-key"
@@ -76,6 +82,8 @@ export JUSTAI_OPENAPI_BASE_URL="https://your-domain"
 ```
 
 ## 最短使用方式
+
+如果当前没有 API key，也可以直接运行下面任意命令。脚本会自动进入登录流程，而不是先报错或要求用户手填 key。
 
 先查看资料库：
 
@@ -148,6 +156,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 
 - `chat.py` 只负责 `/openapi/agent/chat_submit`
 - `chat_result.py` 只负责 `/openapi/agent/chat_result`
+- 缺少 `JUSTAI_OPENAPI_API_KEY` 时，脚本会自动发起登录桥接，并把拿到的 key 写回 shell rc 文件
 - `conversation_id` 需要自己保留，用于后续续聊
 - `confirm_info` 返回 `form_id` 后，既可以继续发自然语言，也可以直接传 `form_id + form_data` 结构化续跑
 - 在 Claude Code 中，`${CLAUDE_SKILL_DIR}` 会自动指向当前 skill 目录

@@ -16,7 +16,7 @@ def main() -> int:
     args = parser.parse_args()
 
     result = open_json(
-        build_request("/openapi/projects/list", {}, get_api_key()),
+        build_request("/openapi/projects/list", {}, get_api_key(timeout=args.timeout)),
         timeout=args.timeout,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -22,7 +22,7 @@ def main() -> int:
         payload["keyword"] = args.keyword
 
     result = open_json(
-        build_request("/openapi/skills/list", payload, get_api_key()),
+        build_request("/openapi/skills/list", payload, get_api_key(timeout=args.timeout)),
         timeout=args.timeout,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
