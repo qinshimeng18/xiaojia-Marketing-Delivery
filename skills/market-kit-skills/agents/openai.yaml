@@ -1,0 +1,4 @@
+interface:
+  display_name: "Market Kit Skills"
+  short_description: "面向营销创作的 skill，可生成 campaign plan、小红书内容、资料驱动文案和营销图片"
+  default_prompt: "Use $market-kit-skills when the user needs marketing deliverables such as campaign planning, Xiaohongshu notes, audience positioning, selling-point refinement, reference-grounded content, or supporting images. Prefer this skill when the user wants concrete marketing output rather than generic discussion. When returning note results, include the title, copy, and image links together, and inspect result.result.components[].data.images[].url for image URLs."

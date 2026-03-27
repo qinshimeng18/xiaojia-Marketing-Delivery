@@ -1,10 +1,18 @@
-# xiaojia-skills
+# Market Kit Skills
 
-这个仓库用于分发可安装的 AI skill。
+这个仓库用于分发可安装的营销 AI skill。
 
 当前包含：
 
-- `skills/justai-openapi-chat`
+- `skills/market-kit-skills`
+
+它适合这些场景：
+
+- campaign plan
+- 小红书图文与笔记
+- 人群、卖点、定位梳理
+- 资料驱动的营销内容生成
+- 营销图片和图文组合内容
 
 ## Claude Code 安装
 
@@ -13,7 +21,7 @@
 ```bash
 mkdir -p ~/.claude/skills
 git clone https://github.com/qinshimeng18/xiaojia-skills.git /tmp/xiaojia-skills
-cp -R /tmp/xiaojia-skills/skills/justai-openapi-chat ~/.claude/skills/
+cp -R /tmp/xiaojia-skills/skills/market-kit-skills ~/.claude/skills/
 ```
 
 项目级安装：
@@ -21,30 +29,22 @@ cp -R /tmp/xiaojia-skills/skills/justai-openapi-chat ~/.claude/skills/
 ```bash
 mkdir -p .claude/skills
 git clone https://github.com/qinshimeng18/xiaojia-skills.git /tmp/xiaojia-skills
-cp -R /tmp/xiaojia-skills/skills/justai-openapi-chat .claude/skills/
+cp -R /tmp/xiaojia-skills/skills/market-kit-skills .claude/skills/
 ```
 
-安装后重启 Claude Code，skill 会以 `/justai-openapi-chat` 的形式可用。
+安装后重启 Claude Code，skill 会以 `/market-kit-skills` 的形式可用。
 
 ## Codex 安装
 
 ```bash
 mkdir -p ~/.codex/skills
 git clone https://github.com/qinshimeng18/xiaojia-skills.git /tmp/xiaojia-skills
-cp -R /tmp/xiaojia-skills/skills/justai-openapi-chat ~/.codex/skills/
+cp -R /tmp/xiaojia-skills/skills/market-kit-skills ~/.codex/skills/
 ```
 
 安装后重启 Codex。
 
-## 前置环境变量
-
-```bash
-export JUSTAI_OPENAPI_BASE_URL="https://your-domain"
-export JUSTAI_OPENAPI_API_KEY="your-api-key"
-export JUSTAI_OPENAPI_TIMEOUT="300"
-```
-
 更具体的用法见：
 
-- `skills/justai-openapi-chat/README.md`
-- `skills/justai-openapi-chat/SKILL.md`
+- `skills/market-kit-skills/README.md`
+- `skills/market-kit-skills/SKILL.md`
