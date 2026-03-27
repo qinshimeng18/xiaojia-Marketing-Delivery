@@ -16,19 +16,15 @@
 
 ## 安装方式
 
-任何支持从 GitHub 安装 skill 的 AI Agent 都可以直接使用这个仓库。
-
-最简单的安装方式不是手动复制文件，而是直接把仓库地址发给你的 Agent，再告诉它安装 `market-kit-skills`：
+安装方式很简单：把这个 GitHub 仓库地址发给你的 Agent，然后告诉它帮你安装 `market-kit-skills` 就可以。
 
 ```text
-请帮我从这个仓库安装 skill：
+请帮我安装这个 skill：
 https://github.com/qinshimeng18/xiaojia-skills
 
-我要安装的 skill 是：
+skill 名称：
 market-kit-skills
 ```
-
-如果你的 Agent 支持 GitHub skill 安装、skill 市场安装，或者支持从仓库安装指定 skill，这种方式都适用。
 
 更具体的用法见：
 
