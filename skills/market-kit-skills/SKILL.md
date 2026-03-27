@@ -87,3 +87,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 当用户想用特定营销能力链路时，优先使用 `skill_id`
 - 返回结果时优先读 `result`，不要只读顶层 `text`
 - 如果 `chat_result.py` 还在输出 `status=running`，说明营销内容仍在生成，不能过早判断“没有图片”或“没有结果”
+- 对 `generate_notes`、`generate_image` 这类慢分支，除非用户明确要求，否则不要把 `chat_result.py --timeout` 设成小于 `300`
+- 如果脚本返回 `Polling timed out before task completed.`，不要把轮询超时当成任务失败；这通常表示当前轮询窗口不够长，任务仍可能在后台继续生成
+- 当状态是 `running` 或出现轮询超时时，应明确告诉用户“还在生成”，而不是直接补一版手写稿冒充最终结果

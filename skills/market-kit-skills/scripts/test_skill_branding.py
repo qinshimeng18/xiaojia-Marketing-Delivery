@@ -46,6 +46,23 @@ class SkillBrandingTests(unittest.TestCase):
             self.assertNotIn("payment", text.lower())
             self.assertNotIn("营销页", text)
 
+    def test_skill_docs_define_timeout_rules_for_slow_generation(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("300", skill_text)
+        self.assertIn("300", readme_text)
+        self.assertIn("running", skill_text)
+        self.assertIn("running", yaml_text)
+        self.assertIn("不要把轮询超时当成任务失败", skill_text)
+        self.assertIn("不要把轮询超时当成任务失败", readme_text)
+        self.assertIn("timeout", yaml_text.lower())
+
 
 if __name__ == "__main__":
     unittest.main()
