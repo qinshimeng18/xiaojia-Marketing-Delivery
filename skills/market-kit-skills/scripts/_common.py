@@ -10,6 +10,7 @@ import urllib.request
 
 
 DEFAULT_TIMEOUT = 300
+DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_BASE_URL = "https://justailab.com"
 DEFAULT_LOGIN_POLL_INTERVAL = 2
 MARKETING_PAYMENT_URL = "https://dev.justailab.xyz/marketing"
@@ -115,9 +116,10 @@ def get_base_url() -> str:
 def get_default_timeout(home: Path | None = None) -> int:
     raw_value = _resolve_value(TIMEOUT_ENV_NAME, "timeout", home=home, default=str(DEFAULT_TIMEOUT))
     try:
-        return int(raw_value)
+        value = int(raw_value)
     except ValueError as exc:
         raise SystemExit(f"{TIMEOUT_ENV_NAME} must be an integer.") from exc
+    return max(value, DEFAULT_TIMEOUT)
 
 
 def _get_shell_name(shell_env: str | None = None) -> str:
@@ -174,7 +176,7 @@ def persist_local_config(
     config["api_key"] = api_key
     config["base_url"] = (base_url or get_base_url()).rstrip("/")
     if timeout is not None:
-        config["timeout"] = int(timeout)
+        config["timeout"] = max(int(timeout), DEFAULT_TIMEOUT)
     elif "timeout" not in config:
         config["timeout"] = DEFAULT_TIMEOUT
 
@@ -192,9 +194,10 @@ def persist_api_key(
     rc_path = _get_primary_shell_rc_path(shell_env=shell_env, home=home)
     escaped_api_key = api_key.replace("\\", "\\\\").replace('"', '\\"')
     escaped_base_url = (base_url or get_base_url()).replace("\\", "\\\\").replace('"', '\\"')
+    persisted_timeout = max(int(timeout if timeout is not None else get_default_timeout(home=home)), DEFAULT_TIMEOUT)
     export_line = f'export {API_KEY_ENV_NAME}="{escaped_api_key}"\n'
     base_url_line = f'export {BASE_URL_ENV_NAME}="{escaped_base_url}"\n'
-    timeout_line = f'export {TIMEOUT_ENV_NAME}="{int(timeout if timeout is not None else get_default_timeout(home=home))}"\n'
+    timeout_line = f'export {TIMEOUT_ENV_NAME}="{persisted_timeout}"\n'
 
     if rc_path.exists():
         lines = rc_path.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -404,12 +407,13 @@ def get_chat_result(
 def poll_chat_result(
     conversation_id: str,
     timeout: int = DEFAULT_TIMEOUT,
+    request_timeout: int = DEFAULT_REQUEST_TIMEOUT,
     poll_interval: int = 2,
     progress_callback=None,
 ) -> dict:
     start_time = time.time()
     while True:
-        result = get_chat_result(conversation_id=conversation_id, timeout=timeout)
+        result = get_chat_result(conversation_id=conversation_id, timeout=request_timeout)
         status = result.get("status", "")
         if status in {"completed", "failed"}:
             return result

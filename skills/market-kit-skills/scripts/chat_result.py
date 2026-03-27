@@ -12,7 +12,7 @@ def main() -> int:
         "--timeout",
         type=int,
         default=get_default_timeout(),
-        help="Polling timeout in seconds. Defaults to env/local config or 300.",
+        help="Total polling timeout in seconds. Defaults to env/local config or 300.",
     )
     parser.add_argument(
         "--poll-interval",

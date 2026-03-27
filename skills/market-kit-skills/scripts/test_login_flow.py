@@ -44,6 +44,33 @@ class LoginFlowTests(unittest.TestCase):
         self.assertEqual(base_url, "https://config.example.com")
         self.assertEqual(timeout, 300)
 
+    def test_get_default_timeout_clamps_too_small_config_values(self):
+        with TemporaryDirectory() as tmp_dir:
+            home = Path(tmp_dir)
+            config_path = home / "justai-openapi-chat.json"
+            config_path.write_text(
+                json.dumps(
+                    {
+                        "base_url": "https://config.example.com",
+                        "api_key": "config-key",
+                        "timeout": 5,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.dict(
+                os.environ,
+                {
+                    "SHELL": "/bin/zsh",
+                    "JUSTAI_OPENAPI_CONFIG": str(config_path),
+                },
+                clear=True,
+            ):
+                timeout = _common.get_default_timeout()
+
+        self.assertEqual(timeout, _common.DEFAULT_TIMEOUT)
+
     def test_get_api_key_reads_existing_key_from_shell_rc_when_env_missing(self):
         with TemporaryDirectory() as tmp_dir:
             home = Path(tmp_dir)
@@ -156,6 +183,31 @@ class LoginFlowTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "completed")
         self.assertEqual(seen, [{"status": "running", "branch": "generate_notes"}])
+
+    def test_poll_chat_result_uses_separate_request_timeout_from_poll_timeout(self):
+        seen_request_timeouts = []
+
+        def fake_get_chat_result(conversation_id: str, timeout: int = 300):
+            seen_request_timeouts.append(timeout)
+            return {"status": "running", "branch": "generate_notes"}
+
+        with patch.object(_common, "get_chat_result", side_effect=fake_get_chat_result), patch.object(
+            _common.time,
+            "time",
+            side_effect=[0, 6],
+        ), patch.object(
+            _common.time,
+            "sleep",
+        ):
+            result = _common.poll_chat_result(
+                conversation_id="cvt_test",
+                timeout=5,
+                poll_interval=2,
+            )
+
+        self.assertEqual(seen_request_timeouts, [_common.DEFAULT_REQUEST_TIMEOUT])
+        self.assertEqual(result["status"], "running")
+        self.assertEqual(result["message"], "Polling timed out before task completed.")
 
 
 if __name__ == "__main__":
