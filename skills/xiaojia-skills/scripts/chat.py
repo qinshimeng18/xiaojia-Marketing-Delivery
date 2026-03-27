@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import os
-from _common import DEFAULT_TIMEOUT, submit_chat
+from _common import get_default_timeout, submit_chat
 
 
 def _load_form_data(form_data_json: str, form_data_file: str) -> dict:
@@ -36,8 +35,8 @@ def main() -> int:
     parser.add_argument(
         "--timeout",
         type=int,
-        default=int(os.environ.get("JUSTAI_OPENAPI_TIMEOUT", DEFAULT_TIMEOUT)),
-        help="HTTP timeout in seconds. Defaults to JUSTAI_OPENAPI_TIMEOUT or 300.",
+        default=get_default_timeout(),
+        help="HTTP timeout in seconds. Defaults to env/local config or 300.",
     )
     parser.add_argument(
         "--project-id",

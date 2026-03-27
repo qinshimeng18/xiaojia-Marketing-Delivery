@@ -60,13 +60,27 @@ cp -R /tmp/xiaojia-skills/skills/xiaojia-skills ~/.codex/skills/
 
 如果 `JUSTAI_OPENAPI_API_KEY` 已经存在，skill 会直接复用它。
 
-If `JUSTAI_OPENAPI_API_KEY` is missing, the skill will start the login flow automatically, print a `/login?login_token=...` URL for the user to open, poll for login completion, and persist the returned API key into the detected shell rc file so later runs can reuse it without asking again。
+If `JUSTAI_OPENAPI_API_KEY` is missing, the skill will start the login flow automatically, print a `/login?login_token=...` URL for the user to open, poll for login completion, and persist the returned API key into both the detected shell rc file and a local config file so later runs can reuse it without asking again。
 
 你也可以手动预先配置：
 
 ```bash
 export JUSTAI_OPENAPI_API_KEY="your-api-key"
 ```
+
+也可以手动写一个本地配置文件作为兜底，默认会查这些位置：
+
+```json
+{
+  "base_url": "https://justailab.com",
+  "api_key": "your-api-key",
+  "timeout": 300
+}
+```
+
+- `~/.codex/justai-openapi-chat.json`
+- `~/.claude/justai-openapi-chat.json`
+- 或通过 `JUSTAI_OPENAPI_CONFIG` 指向自定义文件
 
 可选覆盖：
 
@@ -156,7 +170,9 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 
 - `chat.py` 只负责 `/openapi/agent/chat_submit`
 - `chat_result.py` 只负责 `/openapi/agent/chat_result`
-- 缺少 `JUSTAI_OPENAPI_API_KEY` 时，脚本会自动发起登录桥接，并把拿到的 key 写回 shell rc 文件
+- 缺少 `JUSTAI_OPENAPI_API_KEY` 时，脚本会自动发起登录桥接，并把拿到的 key 同时写回 shell rc 文件和本地配置文件
 - `conversation_id` 需要自己保留，用于后续续聊
 - `confirm_info` 返回 `form_id` 后，既可以继续发自然语言，也可以直接传 `form_id + form_data` 结构化续跑
+- `chat_result.py` 在任务还没完成时，会把当前 `status/branch/content_type` 打到 `stderr`；最终 JSON 仍然只输出到 `stdout`
+- 图文笔记图片通常在 `result.result.components[].data.images[].url`
 - 在 Claude Code 中，`${CLAUDE_SKILL_DIR}` 会自动指向当前 skill 目录

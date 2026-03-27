@@ -31,7 +31,7 @@ When running inside Claude Code, `${CLAUDE_SKILL_DIR}` resolves to this skill di
 
 1. Optional override: set `JUSTAI_OPENAPI_BASE_URL` if you need a non-default environment. The default is `https://justailab.com`.
 2. Optional: set `JUSTAI_OPENAPI_TIMEOUT` for slower tasks.
-3. If `JUSTAI_OPENAPI_API_KEY` is missing, treat that as not logged in. Do not ask the user to paste an API key first. Run the normal skill command, let the script start the login flow, show the generated `/login?login_token=...` URL to the user, wait for login completion, and persist the returned API key into the user's shell rc file automatically.
+3. If `JUSTAI_OPENAPI_API_KEY` is missing, treat that as not logged in. Do not ask the user to paste an API key first. Run the normal skill command, let the script start the login flow, show the generated `/login?login_token=...` URL to the user, wait for login completion, and persist the returned API key into both the user's shell rc file and a local config file automatically.
 4. If the task should be scoped to a specific资料库, run `scripts/list_projects.py` first and choose one or more `project_id`.
 5. If the task should preload a specific skill, run `scripts/list_skills.py` first and choose one or more `skill_id`.
 6. Run `scripts/chat.py` with `--message`, optional `--conversation-id`, optional repeated `--project-id`, and optional repeated `--skill-id`.
@@ -42,6 +42,7 @@ When running inside Claude Code, `${CLAUDE_SKILL_DIR}` resolves to this skill di
    - `result` is the primary payload
    - `text` is the human-readable summary or fallback text
    - `conversation_id` must be preserved for follow-up turns
+   - For note/image-heavy results, do not stop at top-level `text`; inspect nested result payloads as well
 10. If the user asks to continue an existing conversation, pass the previous `conversation_id` back into `scripts/chat.py` together with the new `--message`.
 11. For `confirm_info` results:
    - To accept the card and continue, send a natural-language follow-up such as `这些信息没问题，继续生成方案`.
@@ -151,10 +152,13 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/payment_link.py"
 ## Guardrails
 
 - Prefer the scripts over hand-written `curl` so submit and polling stay consistent.
-- If `JUSTAI_OPENAPI_API_KEY` is missing, start the login flow instead of asking the user to paste an API key. The login flow should end with the returned API key being written into the detected shell rc file automatically.
+- If `JUSTAI_OPENAPI_API_KEY` is missing, start the login flow instead of asking the user to paste an API key. The login flow should end with the returned API key being written into both the detected shell rc file and a local config file automatically.
 - When the task depends on a specific资料库 or手动技能, list them first and pass the exact IDs. The openapi request now统一使用 `project_id` 和 `skill_id` 两个字段，值都是字符串数组。
 - Keep `conversation_id` from the last successful submit response and reuse it for polling and follow-up requests.
 - Treat `result` as the primary machine-readable payload. Use `text` only as fallback when `result` is plain text.
+- If `chat_result.py` prints `status=running` to `stderr`, that means generation is still in progress. Do not report "no images" or "no result" yet.
+- For 图文笔记 results, inspect `result.result.components[].data.images[].url` for image links, `result.result.components[].data.title` for titles, and `result.result.components[].data.content` for copy text.
+- If images are still generating, tell the user they may still be rendering and ask whether to check again, instead of declaring failure.
 - `confirm_info` can continue through natural-language follow-up on the same `conversation_id`, or through structured `form_id + form_data` submission when the caller already has the updated card payload.
 - If the endpoint returns `status=failed`, surface `message` directly instead of retrying blindly.
 - For payment-related requests, prefer the fixed marketing page `https://dev.justailab.xyz/marketing` instead of calling billing APIs.

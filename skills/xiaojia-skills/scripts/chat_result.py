@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import os
-from _common import DEFAULT_TIMEOUT, poll_chat_result
+import sys
+from _common import get_default_timeout, poll_chat_result
 
 
 def main() -> int:
@@ -11,8 +11,8 @@ def main() -> int:
     parser.add_argument(
         "--timeout",
         type=int,
-        default=int(os.environ.get("JUSTAI_OPENAPI_TIMEOUT", DEFAULT_TIMEOUT)),
-        help="Polling timeout in seconds. Defaults to JUSTAI_OPENAPI_TIMEOUT or 300.",
+        default=get_default_timeout(),
+        help="Polling timeout in seconds. Defaults to env/local config or 300.",
     )
     parser.add_argument(
         "--poll-interval",
@@ -22,10 +22,22 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    def on_progress(result: dict) -> None:
+        status = str(result.get("status", "") or "")
+        branch = str(result.get("branch", "") or "")
+        content_type = str(result.get("content_type", "") or "")
+        message = f"[chat_result] status={status}"
+        if branch:
+            message += f" branch={branch}"
+        if content_type:
+            message += f" content_type={content_type}"
+        print(message, file=sys.stderr, flush=True)
+
     result = poll_chat_result(
         conversation_id=args.conversation_id,
         timeout=args.timeout,
         poll_interval=args.poll_interval,
+        progress_callback=on_progress,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result.get("status") == "completed" else 1

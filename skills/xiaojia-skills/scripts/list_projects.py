@@ -2,7 +2,7 @@
 import argparse
 import json
 
-from _common import DEFAULT_TIMEOUT, build_request, get_api_key, open_json
+from _common import build_request, get_api_key, get_default_timeout, open_json
 
 
 def main() -> int:
@@ -10,13 +10,13 @@ def main() -> int:
     parser.add_argument(
         "--timeout",
         type=int,
-        default=DEFAULT_TIMEOUT,
-        help="HTTP timeout in seconds. Defaults to 300.",
+        default=get_default_timeout(),
+        help="HTTP timeout in seconds. Defaults to env/local config or 300.",
     )
     args = parser.parse_args()
 
     result = open_json(
-        build_request("/openapi/projects/list", {}, get_api_key(timeout=args.timeout)),
+        build_request("/openapi/projects/list", {}, get_api_key()),
         timeout=args.timeout,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
