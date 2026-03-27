@@ -34,29 +34,15 @@
 
 ## 安装方式
 
-安装不需要手动折腾目录、复制文件或者写一堆命令。
-
-只要你的 Agent 支持从 GitHub 安装 skill，直接把这个仓库地址发给它，再告诉它安装 `market-kit-skills` 就可以：
+安装方式很简单：把这个 GitHub 仓库地址发给你的 Agent，然后告诉它帮你安装 `market-kit-skills` 就可以。
 
 ```text
-仓库地址：
+请帮我安装这个 skill：
 https://github.com/qinshimeng18/xiaojia-skills
 
-安装目标：
+skill 名称：
 market-kit-skills
 ```
-
-一句最简单的话术就是：
-
-```text
-请帮我从这个仓库安装 skill：
-https://github.com/qinshimeng18/xiaojia-skills
-
-我要安装的 skill 是：
-market-kit-skills
-```
-
-如果你的 Agent 支持 skill 市场、GitHub skill 安装，或者支持把仓库里的指定 skill 安装到本地，这种方式都适用。
 
 ## 首次使用
 
