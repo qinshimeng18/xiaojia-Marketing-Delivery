@@ -14,35 +14,21 @@
 - 资料驱动的营销内容生成
 - 营销图片和图文组合内容
 
-## Claude Code 安装
+## 安装方式
 
-个人级安装：
+任何支持从 GitHub 安装 skill 的 AI Agent 都可以直接使用这个仓库。
 
-```bash
-mkdir -p ~/.claude/skills
-git clone https://github.com/qinshimeng18/xiaojia-skills.git /tmp/xiaojia-skills
-cp -R /tmp/xiaojia-skills/skills/market-kit-skills ~/.claude/skills/
+最简单的安装方式不是手动复制文件，而是直接把仓库地址发给你的 Agent，再告诉它安装 `market-kit-skills`：
+
+```text
+请帮我从这个仓库安装 skill：
+https://github.com/qinshimeng18/xiaojia-skills
+
+我要安装的 skill 是：
+market-kit-skills
 ```
 
-项目级安装：
-
-```bash
-mkdir -p .claude/skills
-git clone https://github.com/qinshimeng18/xiaojia-skills.git /tmp/xiaojia-skills
-cp -R /tmp/xiaojia-skills/skills/market-kit-skills .claude/skills/
-```
-
-安装后重启 Claude Code，skill 会以 `/market-kit-skills` 的形式可用。
-
-## Codex 安装
-
-```bash
-mkdir -p ~/.codex/skills
-git clone https://github.com/qinshimeng18/xiaojia-skills.git /tmp/xiaojia-skills
-cp -R /tmp/xiaojia-skills/skills/market-kit-skills ~/.codex/skills/
-```
-
-安装后重启 Codex。
+如果你的 Agent 支持 GitHub skill 安装、skill 市场安装，或者支持从仓库安装指定 skill，这种方式都适用。
 
 更具体的用法见：
 
