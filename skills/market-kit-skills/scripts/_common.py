@@ -32,13 +32,6 @@ TIMEOUT_EXPORT_RE = re.compile(
 )
 
 
-def require_env(name: str) -> str:
-    value = os.environ.get(name, "").strip()
-    if not value:
-        raise SystemExit(f"Missing required environment variable: {name}")
-    return value
-
-
 def _candidate_config_paths(home: Path | None = None) -> list[Path]:
     paths = []
     explicit_path = os.environ.get("JUSTAI_OPENAPI_CONFIG", "").strip()
@@ -286,7 +279,7 @@ def get_api_key(
     if not auto_login:
         checked_paths = ", ".join(str(path) for path in _candidate_config_paths(home=home))
         raise SystemExit(
-            f"Missing required environment variable: {API_KEY_ENV_NAME}. "
+            "No login information found. Please complete login first. "
             f"Also checked local config ({checked_paths})."
         )
 
@@ -297,7 +290,7 @@ def get_api_key(
 
     login_url = f"{get_base_url()}/login?login_token={login_token}"
     print(
-        "No API key found. Please open this URL and complete login:\n"
+        "No login information found yet. Please open this URL and complete login:\n"
         f"{login_url}",
         file=sys.stderr,
     )
@@ -321,7 +314,7 @@ def get_api_key(
     os.environ[API_KEY_ENV_NAME] = api_key
     os.environ[BASE_URL_ENV_NAME] = base_url
     os.environ[TIMEOUT_ENV_NAME] = str(timeout)
-    print(f"Stored {API_KEY_ENV_NAME} in {rc_path} and {config_path}", file=sys.stderr)
+    print(f"Saved login information in {rc_path} and {config_path}", file=sys.stderr)
     return api_key
 
 

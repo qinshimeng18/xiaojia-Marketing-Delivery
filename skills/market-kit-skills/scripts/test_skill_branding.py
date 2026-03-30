@@ -15,6 +15,8 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("# Market Kit Skills", skill_text)
         self.assertIn('display_name: "Market Kit Skills"', yaml_text)
         self.assertIn("marketing", yaml_text.lower())
+        self.assertIn("metadata:", skill_text)
+        self.assertIn("openclaw:", skill_text)
 
     def test_user_facing_docs_focus_on_marketing_capabilities(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
@@ -39,8 +41,9 @@ class SkillBrandingTests(unittest.TestCase):
         skill_text = skill_md.read_text(encoding="utf-8")
         readme_text = readme.read_text(encoding="utf-8")
         yaml_text = openai_yaml.read_text(encoding="utf-8")
+        skill_body = skill_text.split("---", 2)[-1]
 
-        for text in (skill_text, readme_text, yaml_text):
+        for text in (skill_body, readme_text, yaml_text):
             self.assertNotIn("JUSTAI_OPENAPI_API_KEY", text)
             self.assertNotIn("login flow", text)
             self.assertNotIn("payment", text.lower())
@@ -81,6 +84,17 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("https://justailab.com/marketing", skill_text)
         self.assertIn("https://justailab.com/marketing", readme_text)
         self.assertIn("https://justailab.com/marketing", yaml_text)
+
+    def test_openclaw_metadata_declares_system_managed_envs(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        skill_text = skill_md.read_text(encoding="utf-8")
+
+        self.assertIn("JUSTAI_OPENAPI_API_KEY", skill_text)
+        self.assertIn("JUSTAI_OPENAPI_BASE_URL", skill_text)
+        self.assertIn("JUSTAI_OPENAPI_TIMEOUT", skill_text)
+        self.assertIn("System-managed JustAI API key created after login", skill_text)
+        self.assertIn("required: false", skill_text)
+        self.assertIn("sensitive: true", skill_text)
 
     def test_internal_prompt_uses_agent_market_not_agent_default(self):
         openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"

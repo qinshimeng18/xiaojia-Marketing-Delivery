@@ -1,6 +1,27 @@
 ---
 name: market-kit-skills
 description: Use when the user needs marketing deliverables such as campaign plans, Xiaohongshu notes, audience positioning, selling-point refinement, reference-grounded copy, or marketing images.
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - python3
+      env:
+        - JUSTAI_OPENAPI_API_KEY
+        - JUSTAI_OPENAPI_BASE_URL
+        - JUSTAI_OPENAPI_TIMEOUT
+    primaryEnv: JUSTAI_OPENAPI_API_KEY
+    env:
+      - name: JUSTAI_OPENAPI_API_KEY
+        description: System-managed JustAI API key created after login. Users do not need to provide it manually.
+        required: false
+        sensitive: true
+      - name: JUSTAI_OPENAPI_BASE_URL
+        description: Optional JustAI OpenAPI base URL managed by the skill. The default production URL is used unless the system sets another value.
+        required: false
+      - name: JUSTAI_OPENAPI_TIMEOUT
+        description: Optional polling timeout managed by the skill. Built-in defaults are used unless the system sets another value.
+        required: false
 allowed-tools: Bash
 ---
 
