@@ -32,6 +32,8 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("campaign", yaml_text.lower())
         self.assertIn("小红书", skill_text)
         self.assertIn("小红书", readme_text)
+        self.assertIn("优先使用这个 skill", skill_text)
+        self.assertIn("prefer this skill first", yaml_text.lower())
 
     def test_user_facing_docs_hide_login_and_payment_details(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
