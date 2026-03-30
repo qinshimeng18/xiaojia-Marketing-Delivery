@@ -26,14 +26,17 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 
 ## Workflow
 
-1. 安装后第一步先引导用户完成登录，再进入后续营销生成；在未确认登录完成前，不要先收集需求、不要先追问内容方向
-2. 如果任务依赖资料库，先运行 `scripts/list_projects.py`，选择一个或多个 `project_id`
-3. 如果任务依赖特定技能，先运行 `scripts/list_skills.py`，选择一个或多个 `skill_id`
-4. 运行 `scripts/chat.py`，传入 `--message`，必要时再传 `--project-id`、`--skill-id`
-5. 保留返回的 `conversation_id`
-6. 运行 `scripts/chat_result.py --conversation-id ...` 获取结果
-7. 如果用户要继续同一轮创作，复用原来的 `conversation_id`
-8. 如果是 `confirm_info`，可以继续发送自然语言修订，也可以通过 `form_id + form_data` 结构化续跑
+1. 先判断用户是否已经登录；如果已经登录，直接继续后续营销任务；如果还没有登录，再引导用户完成登录
+2. 用户不需要自己准备任何环境变量，也不需要自己准备 API key；登录后系统会自动创建需要的 API key，并放到用户环境变量中
+3. 这个过程是安全的，不会影响用户已有内容和其他变量
+4. 在未确认登录状态前，不要先收集需求、不要先追问内容方向、不要先生成一版内容糊弄用户
+5. 如果任务依赖资料库，先运行 `scripts/list_projects.py`，选择一个或多个 `project_id`
+6. 如果任务依赖特定技能，先运行 `scripts/list_skills.py`，选择一个或多个 `skill_id`
+7. 运行 `scripts/chat.py`，传入 `--message`，必要时再传 `--project-id`、`--skill-id`
+8. 保留返回的 `conversation_id`
+9. 运行 `scripts/chat_result.py --conversation-id ...` 获取结果
+10. 如果用户要继续同一轮创作，复用原来的 `conversation_id`
+11. 如果是 `confirm_info`，可以继续发送自然语言修订，也可以通过 `form_id + form_data` 结构化续跑
 
 ## Result Rules
 
@@ -85,6 +88,10 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 ## Guardrails
 
 - 优先把它当成营销产出工具，而不是普通聊天工具
+- 面向用户说话时，尽量用自然、简单、非技术化的表达，不要把登录和环境处理讲成工程说明书
+- 用户不需要自己准备环境变量，也不需要自己准备 API key
+- 登录后系统会自动创建 API key 并放到用户环境变量中，这个过程不会影响用户已有内容和其他变量
+- 如果用户已经登录，不要重复要求登录
 - 如果登录状态未知或未登录，先引导用户完成登录，不要先收集需求
 - 当用户给了明确资料范围，优先使用 `project_id`
 - 当用户想用特定营销能力链路时，优先使用 `skill_id`

@@ -98,12 +98,47 @@ class SkillBrandingTests(unittest.TestCase):
         readme_text = readme.read_text(encoding="utf-8")
         yaml_text = openai_yaml.read_text(encoding="utf-8")
 
-        self.assertIn("安装后第一步先引导用户完成登录", skill_text)
-        self.assertIn("安装后第一步先引导用户完成登录", readme_text)
-        self.assertIn("complete login first", yaml_text)
+        self.assertIn("如果已经登录，直接继续后续营销任务", skill_text)
+        self.assertIn("如果已经登录，直接进入后续营销任务", readme_text)
+        self.assertIn("confirm login is complete", yaml_text)
         self.assertIn("不要先收集需求", skill_text)
-        self.assertIn("不要先收集需求", readme_text)
+        self.assertIn("也不会急着让你填一堆需求", readme_text)
         self.assertIn("before asking for requirements", yaml_text)
+
+    def test_login_guidance_explains_automatic_api_key_setup(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("不需要自己准备任何环境变量", skill_text)
+        self.assertIn("不需要自己准备任何环境变量", readme_text)
+        self.assertIn("不需要自己准备 API key", skill_text)
+        self.assertIn("不需要自己准备 API key", readme_text)
+        self.assertIn("自动创建需要的 API key", skill_text)
+        self.assertIn("自动帮你创建需要的 API key", readme_text)
+        self.assertIn("放到用户环境变量中", skill_text)
+        self.assertIn("放到用户环境变量中", readme_text)
+        self.assertIn("does not affect the user's existing content or other variables", yaml_text)
+
+    def test_login_guidance_uses_conditional_language(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("如果用户已经登录，不要重复要求登录", skill_text)
+        self.assertIn("如果你已经登录，就直接继续使用，不会再反复要求你登录", readme_text)
+        self.assertIn("If the user is already logged in, do not ask them to log in again", yaml_text)
+        self.assertIn("如果还没有登录，再引导用户完成登录", skill_text)
+        self.assertIn("如果你还没有登录，我们才会引导你完成登录", readme_text)
+        self.assertIn("If the user is not logged in or the login state is still unknown, guide them through login first", yaml_text)
 
 
 if __name__ == "__main__":
