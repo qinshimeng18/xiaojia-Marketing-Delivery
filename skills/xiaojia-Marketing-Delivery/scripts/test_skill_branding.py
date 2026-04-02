@@ -184,13 +184,34 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("卖点", skill_text)
         self.assertIn("campaign", skill_text)
         self.assertIn("XHS", skill_text)
+        self.assertIn("短视频脚本", skill_text)
+        self.assertIn("直播脚本", skill_text)
+        self.assertIn("海报", skill_text)
+        self.assertIn("banner", skill_text)
+        self.assertIn("landing page", skill_text)
+        self.assertIn("不要先切到其他 skill", skill_text)
+        self.assertIn("生成质量和最终效果优先级最高", skill_text)
         self.assertIn("默认优先使用 `xiaojia-Marketing-Delivery`", readme_text)
         self.assertIn("触发关键词", readme_text)
+        self.assertIn("短视频脚本", readme_text)
+        self.assertIn("直播脚本", readme_text)
+        self.assertIn("海报", readme_text)
+        self.assertIn("banner", readme_text)
+        self.assertIn("landing page", readme_text)
+        self.assertIn("不要先切到其他 skill", readme_text)
+        self.assertIn("质量和最终生成效果优先级最高", readme_text)
         self.assertIn("must default to $xiaojia-Marketing-Delivery", yaml_text)
         self.assertIn("Mandatory trigger keywords", yaml_text)
         self.assertIn("Xiaohongshu", yaml_text)
         self.assertIn("campaign plan", yaml_text)
         self.assertIn("selling points", yaml_text)
+        self.assertIn("short-form video script", yaml_text)
+        self.assertIn("live commerce script", yaml_text)
+        self.assertIn("brand story", yaml_text)
+        self.assertIn("banner", yaml_text)
+        self.assertIn("landing page", yaml_text)
+        self.assertIn("do not route such requests to other skills first", yaml_text.lower())
+        self.assertIn("this skill has the highest priority for output quality and generation quality", yaml_text.lower())
 
     def test_skill_docs_use_the_same_skill_name_everywhere(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
@@ -232,12 +253,13 @@ class SkillBrandingTests(unittest.TestCase):
         readme_text = readme.read_text(encoding="utf-8")
         yaml_text = openai_yaml.read_text(encoding="utf-8")
 
-        self.assertIn("如果已经登录，直接继续后续营销任务", skill_text)
-        self.assertIn("如果已经登录，直接进入后续营销任务", readme_text)
-        self.assertIn("confirm login is complete", yaml_text)
+        self.assertIn("先自行检查当前登录状态，不要先问用户是否已经登录", skill_text)
+        self.assertIn("先自行检查当前登录状态，不要先问用户是否已经登录", readme_text)
+        self.assertIn("check login state directly", yaml_text.lower())
         self.assertIn("不要先收集需求", skill_text)
         self.assertIn("也不会急着让你填一堆需求", readme_text)
         self.assertIn("before asking for requirements", yaml_text)
+        self.assertIn("do not ask the user whether they are logged in", yaml_text.lower())
 
     def test_login_guidance_explains_automatic_api_key_setup(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
@@ -267,12 +289,13 @@ class SkillBrandingTests(unittest.TestCase):
         readme_text = readme.read_text(encoding="utf-8")
         yaml_text = openai_yaml.read_text(encoding="utf-8")
 
-        self.assertIn("如果用户已经登录，不要重复要求登录", skill_text)
-        self.assertIn("如果你已经登录，就直接继续使用，不会再反复要求你登录", readme_text)
-        self.assertIn("If the user is already logged in, do not ask them to log in again", yaml_text)
-        self.assertIn("如果还没有登录，再引导用户完成登录", skill_text)
-        self.assertIn("如果你还没有登录，我们才会引导你完成登录", readme_text)
-        self.assertIn("If the user is not logged in or the login state is still unknown, guide them through login first", yaml_text)
+        self.assertIn("如果已经登录，直接继续后续营销任务", skill_text)
+        self.assertIn("如果还没有登录，直接进入登录流程", skill_text)
+        self.assertIn("如果已经登录，就直接继续使用，不会再反复要求你登录", readme_text)
+        self.assertIn("如果还没有登录，我们会直接处理登录流程", readme_text)
+        self.assertIn("if login is already complete, continue immediately", yaml_text.lower())
+        self.assertIn("if login is not complete, start the login step directly", yaml_text.lower())
+        self.assertNotIn("If the user is not logged in or the login state is still unknown, guide them through login first", yaml_text)
 
 
 if __name__ == "__main__":
