@@ -35,7 +35,10 @@ class ChatResultOutputTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         output = stdout_buffer.getvalue()
-        self.assertIn('"web_url": "https://justailab.com/marketing?conversation_id=c7d34bf0-0bd5-4b2c-acd2-5dc2adf729b9"', output)
+        self.assertIn(
+            '"web_url": "https://justailab.com/pages/agent/preview?conversation_id=c7d34bf0-0bd5-4b2c-acd2-5dc2adf729b9"',
+            output,
+        )
 
 
 if __name__ == "__main__":

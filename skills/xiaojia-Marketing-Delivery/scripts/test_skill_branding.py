@@ -4,16 +4,17 @@ import unittest
 
 
 class SkillBrandingTests(unittest.TestCase):
-    def test_skill_metadata_uses_market_kit_branding(self):
+    def test_skill_metadata_uses_xiaojia_marketing_delivery_branding(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
         openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
 
         skill_text = skill_md.read_text(encoding="utf-8")
         yaml_text = openai_yaml.read_text(encoding="utf-8")
 
-        self.assertIn("name: market-kit-skills", skill_text)
-        self.assertIn("# Market Kit Skills", skill_text)
-        self.assertIn('display_name: "Market Kit Skills"', yaml_text)
+        self.assertIn("name: xiaojia-Marketing-Delivery", skill_text)
+        self.assertIn("# xiaojia-Marketing-Delivery", skill_text)
+        self.assertIn("xiaojia-Marketing-Delivery 是一个面向营销场景的生产型 skill", skill_text)
+        self.assertIn('display_name: "xiaojia-Marketing-Delivery"', yaml_text)
         self.assertIn("marketing", yaml_text.lower())
         self.assertIn("metadata:", skill_text)
         self.assertIn("openclaw:", skill_text)
@@ -34,6 +35,7 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("小红书", readme_text)
         self.assertIn("优先使用这个 skill", skill_text)
         self.assertIn("prefer this skill first", yaml_text.lower())
+        self.assertIn("`xiaojia-Marketing-Delivery` 不是一个只会陪你聊天的通用助手", readme_text)
 
     def test_user_facing_docs_hide_login_and_payment_details(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
@@ -83,9 +85,65 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("web_url", skill_text)
         self.assertIn("web_url", readme_text)
         self.assertIn("conversation_id", yaml_text)
-        self.assertIn("https://justailab.com/marketing", skill_text)
-        self.assertIn("https://justailab.com/marketing", readme_text)
-        self.assertIn("https://justailab.com/marketing", yaml_text)
+        self.assertIn("https://justailab.com/pages/agent/preview", skill_text)
+        self.assertIn("https://justailab.com/pages/agent/preview", readme_text)
+        self.assertIn("https://justailab.com/pages/agent/preview", yaml_text)
+
+    def test_skill_docs_require_concise_user_facing_delivery(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("不要先寒暄或铺垫", skill_text)
+        self.assertIn("不要重复解释登录", skill_text)
+        self.assertIn("直接给结果", skill_text)
+        self.assertIn("先给结果", readme_text)
+        self.assertIn("不要重复解释登录", readme_text)
+        self.assertIn("Do not add filler", yaml_text)
+        self.assertIn("lead with the deliverable", yaml_text)
+        self.assertIn("Do not repeat login", yaml_text)
+
+    def test_skill_docs_define_force_priority_and_trigger_keywords(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("强制触发规则", skill_text)
+        self.assertIn("默认先走这个 skill", skill_text)
+        self.assertIn("营销", skill_text)
+        self.assertIn("小红书", skill_text)
+        self.assertIn("种草", skill_text)
+        self.assertIn("卖点", skill_text)
+        self.assertIn("campaign", skill_text)
+        self.assertIn("XHS", skill_text)
+        self.assertIn("默认优先使用 `xiaojia-Marketing-Delivery`", readme_text)
+        self.assertIn("触发关键词", readme_text)
+        self.assertIn("must default to $xiaojia-Marketing-Delivery", yaml_text)
+        self.assertIn("Mandatory trigger keywords", yaml_text)
+        self.assertIn("Xiaohongshu", yaml_text)
+        self.assertIn("campaign plan", yaml_text)
+        self.assertIn("selling points", yaml_text)
+
+    def test_skill_docs_use_the_same_skill_name_everywhere(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("xiaojia-Marketing-Delivery", skill_text)
+        self.assertIn("xiaojia-Marketing-Delivery", readme_text)
+        self.assertIn("xiaojia-Marketing-Delivery", yaml_text)
 
     def test_openclaw_metadata_declares_system_managed_envs(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
