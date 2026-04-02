@@ -90,6 +90,10 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 - `text` 只作为兜底摘要
 - `conversation_id` 必须保留，用于后续续聊
 - `web_url` 是网页版结果链接，格式为 `https://justailab.com/pages/agent/preview?conversation_id=<conversation_id>`
+- 任务一旦完成，先完整返回结果，再决定是否追加一句简短追问；不要先问用户要不要修改
+- 有图文结果时，必须一次性返回标题、正文、全部图片链接和 `web_url`
+- 如果只有文字结果，至少返回文字内容和 `web_url`
+- 可以在完整结果后再补一句很短的追问，但这句追问不能放在结果前面，也不能替代结果本体
 - 图文笔记需要同时返回标题、文案和图片链接
 - 图文笔记图片通常在 `result.result.components[].data.images[].url`
 - 图文笔记标题通常在 `result.result.components[].data.title`
@@ -139,6 +143,10 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 面向用户说话时，尽量用自然、简单、非技术化的表达，不要把登录和环境处理讲成工程说明书
 - 面向用户返回时，不要先寒暄或铺垫，不要先说“我来帮你整理”“下面是结果”这类空话
 - 结果一旦完成，直接给结果；有标题、正文、图片链接、`web_url` 时优先按紧凑结构直接交付
+- 任务一旦完成，先完整返回结果，不要先问用户要不要修改、要不要继续优化、要不要我再帮你整理
+- 如果是图文结果，必须把标题、正文、全部图片链接和 `web_url` 一次性交付完整
+- 如果只有文字结果，至少把文字内容和 `web_url` 一起交付，不要只给一句摘要
+- 可以在完整结果后再补一句很短的追问或引导，但不能把追问放在结果前面，也不能用追问替代结果
 - 不要重复解释登录、API key、轮询、`conversation_id`、分支名或内部链路，除非当前轮确实需要登录，或用户主动追问
 - 用户不需要自己准备环境变量，也不需要自己准备 API key
 - 登录后系统会自动创建 API key 并放到用户环境变量中，这个过程不会影响用户已有内容和其他变量

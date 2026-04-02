@@ -107,6 +107,31 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("lead with the deliverable", yaml_text)
         self.assertIn("Do not repeat login", yaml_text)
 
+    def test_skill_docs_require_complete_result_delivery_before_follow_up(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("任务一旦完成，先完整返回结果", skill_text)
+        self.assertIn("不要先问用户要不要修改", skill_text)
+        self.assertIn("有图文结果时，必须一次性返回标题、正文、全部图片链接和 `web_url`", skill_text)
+        self.assertIn("如果只有文字结果，至少返回文字内容和 `web_url`", skill_text)
+        self.assertIn("可以在完整结果后再补一句很短的追问", skill_text)
+
+        self.assertIn("完成后先把结果全部给用户", readme_text)
+        self.assertIn("有图文就把标题、正文、全部图片链接和 `web_url` 一次性给全", readme_text)
+        self.assertIn("如果只有文字，就返回文字内容和 `web_url`", readme_text)
+        self.assertIn("可以在结果后补一句很短的追问", readme_text)
+
+        self.assertIn("Once a task is complete, return the full result before any follow-up question", yaml_text)
+        self.assertIn("Do not ask whether the user wants changes before delivering the completed result", yaml_text)
+        self.assertIn("return the title, full copy, all image links, and web_url together", yaml_text)
+        self.assertIn("If there are no images, return the text content and web_url together", yaml_text)
+
     def test_skill_docs_define_force_priority_and_trigger_keywords(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
         readme = Path(__file__).resolve().parents[1] / "README.md"
