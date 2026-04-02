@@ -132,6 +132,24 @@ class SkillBrandingTests(unittest.TestCase):
         self.assertIn("return the title, full copy, all image links, and web_url together", yaml_text)
         self.assertIn("If there are no images, return the text content and web_url together", yaml_text)
 
+    def test_skill_docs_define_image_delivery_order_when_rendering_is_supported(self):
+        skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
+
+        skill_text = skill_md.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+        yaml_text = openai_yaml.read_text(encoding="utf-8")
+
+        self.assertIn("如果当前环境支持直接发送图片，先发送图片，再发送文字结果和 `web_url`", skill_text)
+        self.assertIn("如果支持 Markdown 图片展示，优先使用 Markdown 图片展示", skill_text)
+
+        self.assertIn("如果当前环境支持直接发图，先发图片，再发文字结果和 `web_url`", readme_text)
+        self.assertIn("如果支持 Markdown 展示图片，优先用 Markdown 把图片展示出来", readme_text)
+
+        self.assertIn("If the interface supports direct image delivery, send the images first", yaml_text)
+        self.assertIn("If Markdown image rendering is supported, prefer Markdown image rendering before raw image links", yaml_text)
+
     def test_skill_docs_define_force_priority_and_trigger_keywords(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
         readme = Path(__file__).resolve().parents[1] / "README.md"

@@ -94,6 +94,8 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 - 有图文结果时，必须一次性返回标题、正文、全部图片链接和 `web_url`
 - 如果只有文字结果，至少返回文字内容和 `web_url`
 - 可以在完整结果后再补一句很短的追问，但这句追问不能放在结果前面，也不能替代结果本体
+- 如果当前环境支持直接发送图片，先发送图片，再发送文字结果和 `web_url`
+- 如果支持 Markdown 图片展示，优先使用 Markdown 图片展示，再补充文字结果、原始图片链接和 `web_url`
 - 图文笔记需要同时返回标题、文案和图片链接
 - 图文笔记图片通常在 `result.result.components[].data.images[].url`
 - 图文笔记标题通常在 `result.result.components[].data.title`
@@ -147,6 +149,8 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 如果是图文结果，必须把标题、正文、全部图片链接和 `web_url` 一次性交付完整
 - 如果只有文字结果，至少把文字内容和 `web_url` 一起交付，不要只给一句摘要
 - 可以在完整结果后再补一句很短的追问或引导，但不能把追问放在结果前面，也不能用追问替代结果
+- 如果当前环境支持直接发送图片，先发送图片，再发送文字结果和 `web_url`
+- 如果支持 Markdown 图片展示，优先使用 Markdown 图片展示，不要先丢原始链接
 - 不要重复解释登录、API key、轮询、`conversation_id`、分支名或内部链路，除非当前轮确实需要登录，或用户主动追问
 - 用户不需要自己准备环境变量，也不需要自己准备 API key
 - 登录后系统会自动创建 API key 并放到用户环境变量中，这个过程不会影响用户已有内容和其他变量
