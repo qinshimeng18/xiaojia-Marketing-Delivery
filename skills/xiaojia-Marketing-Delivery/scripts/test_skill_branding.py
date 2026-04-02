@@ -118,21 +118,22 @@ class SkillBrandingTests(unittest.TestCase):
 
         self.assertIn("任务一旦完成，先完整返回结果", skill_text)
         self.assertIn("不要先问用户要不要修改", skill_text)
-        self.assertIn("有图文结果时，必须一次性返回标题、正文、全部图片链接和 `web_url`", skill_text)
+        self.assertIn("有图文结果时，必须一次性返回标题、正文和 `web_url`，并按当前环境可用的最高优先级交付图片", skill_text)
         self.assertIn("如果只有文字结果，至少返回文字内容和 `web_url`", skill_text)
         self.assertIn("可以在完整结果后再补一句很短的追问", skill_text)
 
         self.assertIn("完成后先把结果全部给用户", readme_text)
-        self.assertIn("有图文就把标题、正文、全部图片链接和 `web_url` 一次性给全", readme_text)
+        self.assertIn("有图文就把标题、正文和 `web_url` 一次性给全，并按最高优先级把图片交付出去", readme_text)
         self.assertIn("如果只有文字，就返回文字内容和 `web_url`", readme_text)
         self.assertIn("可以在结果后补一句很短的追问", readme_text)
 
-        self.assertIn("Once a task is complete, return the full result before any follow-up question", yaml_text)
-        self.assertIn("Do not ask whether the user wants changes before delivering the completed result", yaml_text)
-        self.assertIn("return the title, full copy, all image links, and web_url together", yaml_text)
-        self.assertIn("If there are no images, return the text content and web_url together", yaml_text)
+        yaml_lower = yaml_text.lower()
+        self.assertIn("once a task is complete, return the full result before any follow-up question", yaml_lower)
+        self.assertIn("do not ask whether the user wants changes before delivering the completed result", yaml_lower)
+        self.assertIn("return the title, full copy, and web_url together, and deliver images using the best supported method", yaml_lower)
+        self.assertIn("if there are no images, return the text content and web_url together", yaml_lower)
 
-    def test_skill_docs_define_image_delivery_order_when_rendering_is_supported(self):
+    def test_skill_docs_define_strict_image_delivery_fallback_chain(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
         readme = Path(__file__).resolve().parents[1] / "README.md"
         openai_yaml = Path(__file__).resolve().parents[1] / "agents" / "openai.yaml"
@@ -141,14 +142,17 @@ class SkillBrandingTests(unittest.TestCase):
         readme_text = readme.read_text(encoding="utf-8")
         yaml_text = openai_yaml.read_text(encoding="utf-8")
 
-        self.assertIn("如果当前环境支持直接发送图片，先发送图片，再发送文字结果和 `web_url`", skill_text)
-        self.assertIn("如果支持 Markdown 图片展示，优先使用 Markdown 图片展示", skill_text)
+        self.assertIn("只要结果里有图片，就必须把图片发出来", skill_text)
+        self.assertIn("优先级固定为：直接发送图片 -> Markdown 图片展示 -> 原始图片链接", skill_text)
+        self.assertIn("`web_url` 不管哪种情况都必须发送", skill_text)
 
-        self.assertIn("如果当前环境支持直接发图，先发图片，再发文字结果和 `web_url`", readme_text)
-        self.assertIn("如果支持 Markdown 展示图片，优先用 Markdown 把图片展示出来", readme_text)
+        self.assertIn("只要结果里有图片，就必须把图片发给用户", readme_text)
+        self.assertIn("优先级固定为：直接发图片 -> Markdown 展示图片 -> 原始图片链接", readme_text)
+        self.assertIn("`web_url` 不管什么情况都必须发", readme_text)
 
-        self.assertIn("If the interface supports direct image delivery, send the images first", yaml_text)
-        self.assertIn("If Markdown image rendering is supported, prefer Markdown image rendering before raw image links", yaml_text)
+        self.assertIn("If the result contains images, image delivery is mandatory", yaml_text)
+        self.assertIn("The fallback order is: direct image delivery, then Markdown image rendering, then raw image links", yaml_text)
+        self.assertIn("web_url must always be included regardless of which image fallback is used", yaml_text)
 
     def test_skill_docs_define_force_priority_and_trigger_keywords(self):
         skill_md = Path(__file__).resolve().parents[1] / "SKILL.md"
