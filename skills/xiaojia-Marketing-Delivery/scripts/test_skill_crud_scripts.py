@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import _common
 import create_skill
+import list_skills
 import update_skill
 
 
@@ -77,6 +78,36 @@ class SkillCrudScriptTests(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             update_skill.build_payload(args)
+
+    def test_list_skills_builds_full_internal_query_payload(self):
+        args = SimpleNamespace(
+            source="personal",
+            enabled="all",
+            keyword="自动化",
+            category="note",
+            sort_by="latest",
+            page=2,
+            page_size=10,
+            include_details=True,
+            is_featured="false",
+        )
+
+        payload = list_skills.build_payload(args)
+
+        self.assertEqual(
+            payload,
+            {
+                "source": "personal",
+                "enabled": "all",
+                "keyword": "自动化",
+                "category": "note",
+                "sort_by": "latest",
+                "page": 2,
+                "page_size": 10,
+                "include_details": True,
+                "is_featured": False,
+            },
+        )
 
     def test_openapi_skill_helpers_use_expected_endpoints(self):
         captured = []

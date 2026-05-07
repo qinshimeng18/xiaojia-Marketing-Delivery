@@ -131,6 +131,7 @@ List skills:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py" --source personal --enabled all --page-size 50
 ```
 
 Create an internal Skill:

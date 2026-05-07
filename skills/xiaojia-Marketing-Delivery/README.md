@@ -155,6 +155,7 @@ xiaojia-Marketing-Delivery
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/list_projects.py"
 python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py" --source personal --enabled all --page-size 50
 python3 "${CLAUDE_SKILL_DIR}/scripts/create_skill.py" --name "自动化测试 Skill" --description "用于自动化测试" --prompt-file "./prompt.md" --category "note" --verify
 python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" --skill-id "skill_xxx" --prompt-content "新的测试 prompt" --verify
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --message "帮我做一份护肤品牌新品营销方案"

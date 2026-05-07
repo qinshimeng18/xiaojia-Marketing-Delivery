@@ -2,13 +2,59 @@
 import argparse
 import json
 
-from _common import build_request, get_api_key, get_default_timeout, open_json
+from _common import build_request, get_api_key, get_default_timeout, open_json, parse_bool
+
+
+def normalize_enabled(value):
+    if value in (None, ""):
+        return None
+    normalized = str(value).strip().lower()
+    if normalized == "all":
+        return "all"
+    return parse_bool(normalized, "--enabled")
+
+
+def build_payload(args) -> dict:
+    payload = {
+        "source": args.source,
+        "page": args.page,
+        "page_size": args.page_size,
+    }
+    optional_fields = {
+        "keyword": args.keyword,
+        "category": args.category,
+        "sort_by": args.sort_by,
+    }
+    for key, value in optional_fields.items():
+        if value not in (None, ""):
+            payload[key] = value
+    enabled = normalize_enabled(args.enabled)
+    if enabled is not None:
+        payload["enabled"] = enabled
+    is_featured = parse_bool(args.is_featured, "--is-featured")
+    if is_featured is not None:
+        payload["is_featured"] = is_featured
+    if args.include_details:
+        payload["include_details"] = True
+    return payload
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="List available JustAI skills for the current API key.")
-    parser.add_argument("--source", default="all", help="Optional source filter: all, system, personal.")
+    parser.add_argument(
+        "--source",
+        default="all",
+        choices=["all", "system", "personal", "shared", "market"],
+        help="Optional source filter.",
+    )
+    parser.add_argument("--enabled", default="", help="Optional enabled filter: true, false, or all.")
     parser.add_argument("--keyword", default="", help="Optional keyword filter.")
+    parser.add_argument("--category", default="", help="Optional category, such as note/article/ppt.")
+    parser.add_argument("--sort-by", default="", choices=["", "hot", "latest"], help="Optional sort: hot/latest.")
+    parser.add_argument("--page", type=int, default=1, help="Page number.")
+    parser.add_argument("--page-size", type=int, default=20, help="Page size.")
+    parser.add_argument("--include-details", action="store_true", help="Return detailed skill fields.")
+    parser.add_argument("--is-featured", default="", help="Optional true/false featured filter.")
     parser.add_argument(
         "--timeout",
         type=int,
@@ -17,12 +63,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    payload = {"source": args.source}
-    if args.keyword:
-        payload["keyword"] = args.keyword
-
     result = open_json(
-        build_request("/openapi/skills/list", payload, get_api_key()),
+        build_request("/openapi/skills/list", build_payload(args), get_api_key()),
         timeout=args.timeout,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
