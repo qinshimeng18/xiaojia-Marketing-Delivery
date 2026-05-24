@@ -72,12 +72,37 @@ class SkillCrudScriptTests(unittest.TestCase):
             load_strategy="",
             applicable_stage=[],
             priority=None,
+            enabled="",
             share_prompt_visible="",
             market_prompt_visible="",
         )
 
         with self.assertRaises(SystemExit):
             update_skill.build_payload(args)
+
+    def test_update_skill_builds_payload_with_enabled(self):
+        args = SimpleNamespace(
+            skill_id="skill_x",
+            name="",
+            description="",
+            prompt_content="",
+            prompt_file="",
+            thumbnail="",
+            category="",
+            keywords="",
+            market_status="",
+            review_status="",
+            load_strategy="",
+            applicable_stage=[],
+            priority=None,
+            enabled="false",
+            share_prompt_visible="",
+            market_prompt_visible="",
+        )
+
+        payload = update_skill.build_payload(args)
+
+        self.assertEqual(payload, {"skill_id": "skill_x", "enabled": False})
 
     def test_list_skills_builds_full_internal_query_payload(self):
         args = SimpleNamespace(

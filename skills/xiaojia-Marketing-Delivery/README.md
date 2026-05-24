@@ -200,6 +200,11 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
   --skill-id "skill_xxx" \
   --prompt-content "新的测试 prompt" \
   --verify
+
+python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
+  --skill-id "skill_xxx" \
+  --enabled true \
+  --verify
 ```
 
 在确认信息卡后继续生成：
