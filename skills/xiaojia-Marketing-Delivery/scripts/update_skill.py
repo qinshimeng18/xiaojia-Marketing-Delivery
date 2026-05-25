@@ -37,6 +37,9 @@ def build_payload(args) -> dict:
         payload["applicable_stages"] = args.applicable_stage
     if args.priority is not None:
         payload["priority"] = args.priority
+    enabled = parse_bool(args.enabled, "--enabled")
+    if enabled is not None:
+        payload["enabled"] = enabled
     share_prompt_visible = parse_bool(args.share_prompt_visible, "--share-prompt-visible")
     if share_prompt_visible is not None:
         payload["share_prompt_visible"] = share_prompt_visible
@@ -70,6 +73,7 @@ def main() -> int:
         help="Optional applicable stage. Can be repeated.",
     )
     parser.add_argument("--priority", type=int, default=None, help="Optional priority.")
+    parser.add_argument("--enabled", default="", help="Optional true/false.")
     parser.add_argument("--verify", action="store_true", help="Fetch detail after update.")
     parser.add_argument(
         "--timeout",

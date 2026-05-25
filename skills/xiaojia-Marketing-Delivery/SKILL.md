@@ -155,6 +155,15 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
   --verify
 ```
 
+Explicitly enable or disable an internal Skill:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
+  --skill-id "skill_xxx" \
+  --enabled true \
+  --verify
+```
+
 Run a new turn:
 
 ```bash
@@ -220,6 +229,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 当用户给了明确资料范围，优先使用 `project_id`
 - 当用户想用特定营销能力链路时，优先使用 `skill_id`
 - 当任务是创建、更新、验证或清理 JustAI 内部 Skill 时，使用 `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py`；这些脚本通过 OpenAPI API key 调用 `/openapi/skills/*`，不要要求用户提供 `Session-Id`
+- `update_skill.py --enabled true/false` 只在显式传入时改变启用状态；省略时保留原状态，避免误启用已停用 Skill
 - 返回结果时优先读 `result`，不要只读顶层 `text`
 - 如果 `chat_result.py` 还在输出 `status=running`，说明营销内容仍在生成，不能过早判断“没有图片”或“没有结果”
 - 对 `generate_notes`、`generate_image` 这类慢分支，除非用户明确要求，否则不要把 `chat_result.py --timeout` 设成小于 `300`
