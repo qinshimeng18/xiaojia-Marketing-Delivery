@@ -64,6 +64,11 @@ interface:
     image-2, image-flash, and doubao-5.0. The default model is image-2; image
     generation failures fall back to image-flash, then doubao-5.0.
 
+    For local image upload, use scripts/upload_image.py. For local Skill
+    thumbnail upload, use scripts/upload_thumbnail.py. These wrap the existing
+    paid OpenAPI upload endpoints and do not change create_skill.py or
+    update_skill.py behavior.
+
     User-facing responses must be concise. Do not add filler, greetings, or
     preambles. When the result is completed, lead with the deliverable itself.
     Once a task is complete, return the full result before any follow-up

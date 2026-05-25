@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import base64
 import json
+import mimetypes
 import os
 from pathlib import Path
 import re
@@ -12,6 +14,11 @@ import urllib.request
 DEFAULT_TIMEOUT = 300
 DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_BASE_URL = "https://justailab.com"
+IMAGE_UPLOAD_ALLOWED_CONTENT_TYPES = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+}
 DEFAULT_LOGIN_POLL_INTERVAL = 2
 MARKETING_PAYMENT_URL = "https://justailab.com/pages/agent/preview"
 API_KEY_ENV_NAME = "JUSTAI_OPENAPI_API_KEY"
@@ -386,6 +393,94 @@ def resolve_prompt_content(prompt_content: str = "", prompt_file: str = "", requ
     if required and not prompt_content.strip():
         raise SystemExit("--prompt-content or --prompt-file is required.")
     return prompt_content
+
+
+def detect_image_content_type(file_data: bytes, file_name: str = "") -> str:
+    if file_data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if file_data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if len(file_data) >= 12 and file_data[:4] == b"RIFF" and file_data[8:12] == b"WEBP":
+        return "image/webp"
+
+    guessed, _ = mimetypes.guess_type(file_name or "")
+    normalized = str(guessed or "").lower()
+    if normalized in IMAGE_UPLOAD_ALLOWED_CONTENT_TYPES:
+        return normalized
+    raise SystemExit("Only png, jpeg, and webp images are supported.")
+
+
+def read_local_image_file(image_file: str, field_name: str = "--file") -> tuple[Path, bytes, str]:
+    image_path = Path(str(image_file or "").strip()).expanduser()
+    if not image_path.is_file():
+        raise SystemExit(f"{field_name} does not exist: {image_path}")
+    try:
+        file_data = image_path.read_bytes()
+    except OSError as exc:
+        raise SystemExit(f"Failed to read {field_name}: {exc}") from exc
+    if not file_data:
+        raise SystemExit(f"{field_name} is empty.")
+    content_type = detect_image_content_type(file_data, image_path.name)
+    return image_path, file_data, content_type
+
+
+def build_image_upload_payload(image_file: str, field_name: str = "--file") -> dict:
+    image_path, file_data, content_type = read_local_image_file(image_file, field_name=field_name)
+    encoded = base64.b64encode(file_data).decode("ascii")
+    return {
+        "file_name": image_path.name,
+        "image_base64": f"data:{content_type};base64,{encoded}",
+        "content_type": content_type,
+    }
+
+
+def build_skill_thumbnail_upload_payload(thumbnail_file: str) -> dict:
+    image_path, file_data, content_type = read_local_image_file(thumbnail_file, field_name="--file")
+    if content_type != "image/png":
+        raise SystemExit("Skill thumbnail upload only supports png images.")
+    encoded = base64.b64encode(file_data).decode("ascii")
+    return {
+        "file_name": image_path.name,
+        "file_data": f"data:image/png;base64,{encoded}",
+        "content_type": "image/png",
+    }
+
+
+def openapi_upload_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    return open_json(
+        build_request("/openapi/images/upload", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_upload_skill_thumbnail(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    return open_json(
+        build_request("/openapi/skills/upload_thumbnail", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def upload_image_file(image_file: str, timeout: int = DEFAULT_TIMEOUT, field_name: str = "--file") -> str:
+    result = openapi_upload_image(build_image_upload_payload(image_file, field_name=field_name), timeout=timeout)
+    if result.get("status") != "ok":
+        message = result.get("message") or result.get("msg") or "image upload failed"
+        raise SystemExit(message)
+    image_url = str(result.get("url") or "").strip()
+    if not image_url:
+        raise SystemExit("image upload did not return a URL.")
+    return image_url
+
+
+def upload_skill_thumbnail_file(thumbnail_file: str, timeout: int = DEFAULT_TIMEOUT) -> str:
+    result = openapi_upload_skill_thumbnail(build_skill_thumbnail_upload_payload(thumbnail_file), timeout=timeout)
+    if result.get("status") != 0:
+        message = result.get("message") or result.get("msg") or "thumbnail upload failed"
+        raise SystemExit(message)
+    data = result.get("data") or {}
+    thumbnail_url = str(data.get("thumbnail") or data.get("url") or "").strip()
+    if not thumbnail_url:
+        raise SystemExit("thumbnail upload did not return a URL.")
+    return thumbnail_url
 
 
 def openapi_create_skill(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:

@@ -159,6 +159,8 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py" --source personal --enabled
 python3 "${CLAUDE_SKILL_DIR}/scripts/create_skill.py" --name "自动化测试 Skill" --description "用于自动化测试" --prompt-file "./prompt.md" --category "note" --verify
 python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" --skill-id "skill_xxx" --prompt-content "新的测试 prompt" --verify
 python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" --prompt "一张适合咖啡店开业活动的小红书封面图" --model image-2 --pic-scale "3:4"
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "./reference.png"
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_thumbnail.py" --file "./skill-thumbnail.png"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --message "帮我做一份护肤品牌新品营销方案"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" --conversation-id "your-conversation-id"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --conversation-id "your-conversation-id" --message "继续扩写成适合小红书发布的图文笔记"
@@ -197,6 +199,20 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
 ```
 
 `--model` 可选：`image-2`、`image-flash`、`doubao-5.0`。默认 `image-2`；失败会自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。需要绕过内置选项时再用 `--req-key`。
+
+上传本地图片：
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "./reference.png"
+```
+
+上传本地 Skill 封面图：
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_thumbnail.py" --file "./skill-thumbnail.png"
+```
+
+`upload_image.py` 走 `/openapi/images/upload`，支持 `png/jpeg/webp`。`upload_thumbnail.py` 走 `/openapi/skills/upload_thumbnail`，用于 Skill 封面，要求 `png`。
 
 创建或更新内部 Skill，用于自动化测试准备：
 
