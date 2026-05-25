@@ -181,6 +181,21 @@ class SkillCrudScriptTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             generate_image_script.build_payload(args)
 
+    def test_image_upload_payloads_use_existing_openapi_shapes(self):
+        with TemporaryDirectory() as tmp_dir:
+            image_path = Path(tmp_dir) / "thumb.png"
+            image_path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"png-data")
+
+            image_payload = _common.build_image_upload_payload(str(image_path))
+            thumbnail_payload = _common.build_skill_thumbnail_upload_payload(str(image_path))
+
+        self.assertEqual(image_payload["file_name"], "thumb.png")
+        self.assertEqual(image_payload["content_type"], "image/png")
+        self.assertTrue(image_payload["image_base64"].startswith("data:image/png;base64,"))
+        self.assertEqual(thumbnail_payload["file_name"], "thumb.png")
+        self.assertEqual(thumbnail_payload["content_type"], "image/png")
+        self.assertTrue(thumbnail_payload["file_data"].startswith("data:image/png;base64,"))
+
     def test_openapi_skill_helpers_use_expected_endpoints(self):
         captured = []
 
@@ -208,6 +223,8 @@ class SkillCrudScriptTests(unittest.TestCase):
             _common.openapi_get_skill("skill_x", timeout=13)
             _common.openapi_delete_skill("skill_x", timeout=14)
             _common.openapi_generate_image({"prompt": "画一张图"}, timeout=15)
+            _common.openapi_upload_image({"image_base64": "abc"}, timeout=16)
+            _common.openapi_upload_skill_thumbnail({"file_data": "abc"}, timeout=17)
 
         self.assertEqual(
             [item["url"] for item in captured],
@@ -217,12 +234,16 @@ class SkillCrudScriptTests(unittest.TestCase):
                 "https://example.com/openapi/skills/detail",
                 "https://example.com/openapi/skills/delete",
                 "https://example.com/openapi/images/generate",
+                "https://example.com/openapi/images/upload",
+                "https://example.com/openapi/skills/upload_thumbnail",
             ],
         )
         self.assertEqual(captured[0]["authorization"], "Bearer demo-key")
         self.assertEqual(captured[2]["body"], {"skill_id": "skill_x"})
         self.assertEqual(captured[4]["body"], {"prompt": "画一张图"})
-        self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14, 15])
+        self.assertEqual(captured[5]["body"], {"image_base64": "abc"})
+        self.assertEqual(captured[6]["body"], {"file_data": "abc"})
+        self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14, 15, 16, 17])
 
 
 if __name__ == "__main__":

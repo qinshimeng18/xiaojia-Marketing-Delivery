@@ -80,7 +80,9 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 3. `chat.py` 提交任务并拿到 `conversation_id`
 4. `chat_result.py` 查询最终结果
 5. `generate_image.py` 调用付费版 OpenAPI 自由生图接口
-6. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
+6. `upload_image.py` 上传本地营销素材图片
+7. `upload_thumbnail.py` 上传本地 Skill 封面图
+8. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
 
 ## Workflow
 
@@ -187,6 +189,20 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
 ```
 
 默认生图模型是 `image-2`；失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。
+
+Upload a local image:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "./reference.png"
+```
+
+Upload a local Skill thumbnail:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_thumbnail.py" --file "./skill-thumbnail.png"
+```
+
+`upload_image.py` uses `/openapi/images/upload` for png/jpeg/webp images. `upload_thumbnail.py` uses `/openapi/skills/upload_thumbnail` for png Skill thumbnails.
 
 Continue an existing turn:
 
