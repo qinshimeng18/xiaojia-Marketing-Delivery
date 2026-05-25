@@ -58,6 +58,12 @@ interface:
     Internally, this marketing scene must use agent_market semantics and must
     not fall back to a generic default agent scene.
 
+    For direct free-form image generation in this paid skill, use
+    scripts/generate_image.py. This is separate from the free Xiaojia pack and
+    uses the logged-in OpenAPI API key. The script supports --model choices
+    image-2, image-flash, and doubao-5.0. The default model is image-2; image
+    generation failures fall back to image-flash, then doubao-5.0.
+
     User-facing responses must be concise. Do not add filler, greetings, or
     preambles. When the result is completed, lead with the deliverable itself.
     Once a task is complete, return the full result before any follow-up

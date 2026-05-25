@@ -79,7 +79,8 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 2. `list_skills.py` 查看可选技能
 3. `chat.py` 提交任务并拿到 `conversation_id`
 4. `chat_result.py` 查询最终结果
-5. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
+5. `generate_image.py` 调用付费版 OpenAPI 自由生图接口
+6. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
 
 ## Workflow
 
@@ -166,6 +167,17 @@ Poll the result:
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" \
   --conversation-id "existing-conversation-id"
 ```
+
+Generate an image directly:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
+  --prompt "一张适合咖啡店开业活动的小红书封面图" \
+  --model image-2 \
+  --pic-scale "3:4"
+```
+
+默认生图模型是 `image-2`；失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。
 
 Continue an existing turn:
 

@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from __future__ import annotations
-
 import json
 import os
 from pathlib import Path
@@ -414,6 +412,13 @@ def openapi_get_skill(skill_id: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
 def openapi_delete_skill(skill_id: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     return open_json(
         build_request("/openapi/skills/delete", {"skill_id": skill_id}, get_api_key()),
+        timeout=timeout,
+    )
+
+
+def openapi_generate_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    return open_json(
+        build_request("/openapi/images/generate", payload, get_api_key(timeout=timeout)),
         timeout=timeout,
     )
 

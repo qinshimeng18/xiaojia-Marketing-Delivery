@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import _common
 import create_skill
+import generate_image as generate_image_script
 import list_skills
 import update_skill
 
@@ -109,6 +110,52 @@ class SkillCrudScriptTests(unittest.TestCase):
             },
         )
 
+    def test_generate_image_builds_payload(self):
+        self.assertEqual(generate_image_script.DEFAULT_MODEL, "image-2")
+
+        args = SimpleNamespace(
+            prompt="咖啡店开业封面",
+            prompt_file="",
+            model="image-2",
+            pic_scale="1:1",
+            template_id=2,
+            req_key="",
+            conversation_id="img_c1",
+            negative_prompt="低清",
+            max_wait_time=120,
+            poll_interval=3,
+            no_wait=True,
+        )
+
+        payload = generate_image_script.build_payload(args)
+
+        self.assertEqual(payload["prompt"], "咖啡店开业封面")
+        self.assertEqual(payload["model"], "image-2")
+        self.assertEqual(payload["req_key"], "apimart-gpt-image-2")
+        self.assertEqual(payload["pic_scale"], "1:1")
+        self.assertEqual(payload["template_id"], 2)
+        self.assertEqual(payload["conversation_id"], "img_c1")
+        self.assertEqual(payload["negative_prompt"], "低清")
+        self.assertFalse(payload["wait_for_completion"])
+
+    def test_generate_image_requires_prompt(self):
+        args = SimpleNamespace(
+            prompt="",
+            prompt_file="",
+            model="image-flash",
+            pic_scale="3:4",
+            template_id=1,
+            req_key="",
+            conversation_id="",
+            negative_prompt="",
+            max_wait_time=300,
+            poll_interval=5,
+            no_wait=False,
+        )
+
+        with self.assertRaises(SystemExit):
+            generate_image_script.build_payload(args)
+
     def test_openapi_skill_helpers_use_expected_endpoints(self):
         captured = []
 
@@ -135,6 +182,7 @@ class SkillCrudScriptTests(unittest.TestCase):
             _common.openapi_update_skill({"skill_id": "skill_x"}, timeout=12)
             _common.openapi_get_skill("skill_x", timeout=13)
             _common.openapi_delete_skill("skill_x", timeout=14)
+            _common.openapi_generate_image({"prompt": "画一张图"}, timeout=15)
 
         self.assertEqual(
             [item["url"] for item in captured],
@@ -143,11 +191,13 @@ class SkillCrudScriptTests(unittest.TestCase):
                 "https://example.com/openapi/skills/update",
                 "https://example.com/openapi/skills/detail",
                 "https://example.com/openapi/skills/delete",
+                "https://example.com/openapi/images/generate",
             ],
         )
         self.assertEqual(captured[0]["authorization"], "Bearer demo-key")
         self.assertEqual(captured[2]["body"], {"skill_id": "skill_x"})
-        self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14])
+        self.assertEqual(captured[4]["body"], {"prompt": "画一张图"})
+        self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14, 15])
 
 
 if __name__ == "__main__":
