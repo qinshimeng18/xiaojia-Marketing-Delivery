@@ -34,7 +34,7 @@ metadata:
         description: Optional. Set to 1 to print raw Unicode instead of ASCII-safe JSON escapes.
         required: false
       - name: XIAOJIA_FREE_CONFIG_PATH
-        description: Optional local config path. Defaults to ~/.codebuddy/xiaojia-free-marketing-pack.json.
+        description: Optional local config path. Defaults to ~/.workbuddy/skills/xiaojia-free-marketing-pack.json.
         required: false
 allowed-tools: Bash
 ---
@@ -57,7 +57,7 @@ allowed-tools: Bash
 
 脚本默认请求正式服务域名，并会自动初始化本地 `client_id`。不要向用户索要服务端 key。需要指定其他测试或私有服务地址时，任一脚本都可以加 `--base-url`，脚本会持久化该地址，后续调用无需重复设置环境变量。
 
-脚本默认输出 ASCII-safe JSON，中文会显示为 `\uXXXX` 转义，这是为了避免 CodeBuddy 等工具误解码 stdout；解析 JSON 后就是正常中文，不要把它判断为服务端乱码。需要本地直接显示中文时，可设置 `XIAOJIA_FREE_UNICODE_OUTPUT=1`。
+脚本默认输出 ASCII-safe JSON，中文会显示为 `\uXXXX` 转义，这是为了避免 WorkBuddy 等工具误解码 stdout；解析 JSON 后就是正常中文，不要把它判断为服务端乱码。需要本地直接显示中文时，可设置 `XIAOJIA_FREE_UNICODE_OUTPUT=1`。
 
 ## 能力
 
@@ -83,43 +83,50 @@ allowed-tools: Bash
 初始化本地 client_id：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/init_key.py"
+cd xiaojia-free-marketing-pack
+python3 scripts/init_key.py
 ```
 
 初始化并指定服务地址：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/init_key.py" --base-url "https://justailab.com"
+cd xiaojia-free-marketing-pack
+python3 scripts/init_key.py --base-url "https://justailab.com"
 ```
 
 也可以在任一功能脚本里直接指定服务地址：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/skill_ideas.py" --base-url "https://justailab.com" --content "咖啡店新店开业"
+cd xiaojia-free-marketing-pack
+python3 scripts/skill_ideas.py --base-url "https://justailab.com" --content "咖啡店新店开业"
 ```
 
 一键验证技能包：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/smoke_test.py"
+cd xiaojia-free-marketing-pack
+python3 scripts/smoke_test.py
 ```
 
 返回技能创意点：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/skill_ideas.py" --content "帮我做一组新店开业的小红书内容方向"
+cd xiaojia-free-marketing-pack
+python3 scripts/skill_ideas.py --content "帮我做一组新店开业的小红书内容方向"
 ```
 
 查询今日节日热点：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/today_hotspots.py" --content "咖啡店新品活动" --limit 5
+cd xiaojia-free-marketing-pack
+python3 scripts/today_hotspots.py --content "咖啡店新品活动" --limit 5
 ```
 
 生成大字报截图或小红书笔记封面：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/poster_screenshot.py" --content "今天不想内耗，只想把生活过热一点"
+cd xiaojia-free-marketing-pack
+python3 scripts/poster_screenshot.py --content "今天不想内耗，只想把生活过热一点"
 ```
 
 ## Guardrails

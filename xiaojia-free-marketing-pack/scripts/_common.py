@@ -18,9 +18,11 @@ SOURCE_ENV_NAME = "XIAOJIA_FREE_SOURCE"
 PACK_VERSION_ENV_NAME = "XIAOJIA_FREE_PACK_VERSION"
 DEFAULT_SOURCE = "codebuddy"
 DEFAULT_PACK_VERSION = "0.1.0"
+CONFIG_PATH_ENV_VALUE = os.environ.get("XIAOJIA_FREE_CONFIG_PATH", "").strip()
 CONFIG_PATH = Path(
-    os.environ.get("XIAOJIA_FREE_CONFIG_PATH") or "~/.codebuddy/xiaojia-free-marketing-pack.json"
+    CONFIG_PATH_ENV_VALUE or "~/.workbuddy/skills/xiaojia-free-marketing-pack.json"
 ).expanduser()
+LEGACY_CONFIG_PATH = Path("~/.codebuddy/xiaojia-free-marketing-pack.json").expanduser()
 
 
 def normalize_base_url(value: str = "") -> str:
@@ -29,12 +31,8 @@ def normalize_base_url(value: str = "") -> str:
 
 def get_base_url() -> str:
     raw_value = normalize_base_url(os.environ.get(BASE_URL_ENV_NAME, ""))
-    if not raw_value and CONFIG_PATH.is_file():
-        try:
-            config_data = json.loads(CONFIG_PATH.read_text(encoding="utf-8")) or {}
-            raw_value = normalize_base_url(config_data.get("base_url", ""))
-        except (OSError, json.JSONDecodeError):
-            raw_value = ""
+    if not raw_value:
+        raw_value = normalize_base_url(load_config().get("base_url", ""))
     return raw_value or DEFAULT_BASE_URL
 
 
@@ -51,25 +49,31 @@ def set_base_url(base_url: str = "") -> str:
 
 def get_timeout() -> int:
     raw_value = os.environ.get(TIMEOUT_ENV_NAME, "").strip()
-    if not raw_value and CONFIG_PATH.is_file():
-        try:
-            raw_value = str((json.loads(CONFIG_PATH.read_text(encoding="utf-8")) or {}).get("timeout", ""))
-        except (OSError, json.JSONDecodeError):
-            raw_value = ""
+    if not raw_value:
+        raw_value = str(load_config().get("timeout", ""))
     try:
         return max(int(raw_value or DEFAULT_TIMEOUT), 1)
     except ValueError:
         return DEFAULT_TIMEOUT
 
 
+def _candidate_config_paths() -> list[Path]:
+    paths = [CONFIG_PATH]
+    if not CONFIG_PATH_ENV_VALUE and LEGACY_CONFIG_PATH != CONFIG_PATH:
+        paths.append(LEGACY_CONFIG_PATH)
+    return paths
+
+
 def load_config() -> dict:
-    if not CONFIG_PATH.is_file():
-        return {}
-    try:
-        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise SystemExit(f"Failed to read local config: {CONFIG_PATH} ({exc})") from exc
-    return data if isinstance(data, dict) else {}
+    for path in _candidate_config_paths():
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"Failed to read local config: {path} ({exc})") from exc
+        return data if isinstance(data, dict) else {}
+    return {}
 
 
 def save_config(data: dict) -> None:
@@ -105,6 +109,8 @@ def get_client_id(auto_create: bool = True) -> str:
     config = load_config()
     config_value = str(config.get("client_id") or "").strip()
     if config_value:
+        if not CONFIG_PATH.is_file():
+            save_config(config)
         os.environ[CLIENT_ID_ENV_NAME] = config_value
         return config_value
 
