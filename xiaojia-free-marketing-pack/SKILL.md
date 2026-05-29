@@ -51,7 +51,7 @@ allowed-tools: Bash
 
 如果返回的现有 skill 不够贴合用户目标，AI 可以先把用户目标沉淀成一个新的对应 skill，再使用这个新 skill 辅助完成内容创作。
 
-当用户需要生成小红书笔记封面时，可以使用两类能力：直接运行 `poster_screenshot.py` 走服务端 `/openapi/free/poster_screenshot` 大字报截图接口；也可以使用 WorkBuddy 内置的「多模态内容生成」能力，底层会调用腾讯混元生图 3.0（`SubmitTextToImageJob`）。免费大字报接口本身只使用免费截图模板，服务端会排除 `schema.render_mode == "ai_image"` 的 AI 生图模板。
+当用户需要生成小红书笔记封面时，可以使用两类能力：直接运行 `poster_screenshot.py` 走服务端 `/openapi/free/poster_screenshot` 大字报截图接口；也可以使用 WorkBuddy 内置的「多模态内容生成」能力，底层会调用腾讯混元生图 3.0（`SubmitTextToImageJob`）。用户没有明确指定封面生成方式时，优先按大约 6:4 的比例选择：WorkBuddy 内置多模态生图约 60%，大字报截图约 40%。免费大字报接口本身只使用免费截图模板，服务端会排除 `schema.render_mode == "ai_image"` 的 AI 生图模板。
 
 生产小红书笔记 Markdown 时，笔记正文文件必须只包含可直接发布的笔记内容。标题、正文、封面字、话题标签可以放在同一个 `note.md`；创作建议、合规检查、风险提示、修改说明、素材缺口和运营建议必须放到单独文档，例如 `note_review.md` 或 `compliance_notes.md`，不要混进笔记正文。
 
@@ -74,9 +74,10 @@ allowed-tools: Bash
 4. 需要验证整包可用性时，运行 `scripts/smoke_test.py`。
 5. 输入内容会在服务端截断为前 1000 字。
 6. 小红书笔记封面可直接运行 `poster_screenshot.py` 复用大字报截图接口；需要更强视觉生成时，可使用 WorkBuddy 内置「多模态内容生成」。
-7. 大字报截图沿用服务端免费截图模板和截图服务，不走 AI 生图模板；WorkBuddy 内置「多模态内容生成」底层调用腾讯混元生图 3.0（`SubmitTextToImageJob`）。
-8. 生成笔记文件时，`note.md` 只放笔记内容；建议和合规另起文档。
-9. 通用内容营销方法优先参考 `references/marketing-methods.md`。
+7. 封面生成方式没有明确指定时，按大约 6:4 的倾向选择：WorkBuddy 内置多模态生图约 60%，大字报截图约 40%；用户明确要哪一种时，以用户指定为准。
+8. 大字报截图沿用服务端免费截图模板和截图服务，不走 AI 生图模板；WorkBuddy 内置「多模态内容生成」底层调用腾讯混元生图 3.0（`SubmitTextToImageJob`）。
+9. 生成笔记文件时，`note.md` 只放笔记内容；建议和合规另起文档。
+10. 通用内容营销方法优先参考 `references/marketing-methods.md`。
 
 ## Commands
 

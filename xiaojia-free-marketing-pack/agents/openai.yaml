@@ -31,6 +31,10 @@ interface:
     WorkBuddy capability uses Tencent Hunyuan image generation 3.0
     (SubmitTextToImageJob) under the hood. The free poster screenshot endpoint
     itself excludes templates whose schema.render_mode is ai_image.
+    If the user does not specify a cover generation method, prefer an
+    approximate 6:4 mix: WorkBuddy built-in multimodal image generation 60%,
+    poster screenshot generation 40%. If the user explicitly requests either
+    method, follow the user's request.
 
     When producing Xiaohongshu note Markdown, keep note.md limited to publishable
     note content only: title, body, cover text, and hashtags. Put content
