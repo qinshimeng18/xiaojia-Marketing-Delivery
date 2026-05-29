@@ -16,13 +16,12 @@ TIMEOUT_ENV_NAME = "XIAOJIA_FREE_TIMEOUT"
 UNICODE_OUTPUT_ENV_NAME = "XIAOJIA_FREE_UNICODE_OUTPUT"
 SOURCE_ENV_NAME = "XIAOJIA_FREE_SOURCE"
 PACK_VERSION_ENV_NAME = "XIAOJIA_FREE_PACK_VERSION"
-DEFAULT_SOURCE = "codebuddy"
+DEFAULT_SOURCE = "workbuddy"
 DEFAULT_PACK_VERSION = "0.1.0"
 CONFIG_PATH_ENV_VALUE = os.environ.get("XIAOJIA_FREE_CONFIG_PATH", "").strip()
 CONFIG_PATH = Path(
     CONFIG_PATH_ENV_VALUE or "~/.workbuddy/skills/xiaojia-free-marketing-pack.json"
 ).expanduser()
-LEGACY_CONFIG_PATH = Path("~/.codebuddy/xiaojia-free-marketing-pack.json").expanduser()
 
 
 def normalize_base_url(value: str = "") -> str:
@@ -58,10 +57,7 @@ def get_timeout() -> int:
 
 
 def _candidate_config_paths() -> list[Path]:
-    paths = [CONFIG_PATH]
-    if not CONFIG_PATH_ENV_VALUE and LEGACY_CONFIG_PATH != CONFIG_PATH:
-        paths.append(LEGACY_CONFIG_PATH)
-    return paths
+    return [CONFIG_PATH]
 
 
 def load_config() -> dict:
