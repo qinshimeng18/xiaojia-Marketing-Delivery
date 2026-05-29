@@ -1,0 +1,47 @@
+interface:
+  display_name: "xiaojia-free-marketing-pack"
+  short_description: "免费小加营销辅助包，可匹配技能创意点、查节日热点、生成大字报截图或小红书封面"
+  default_prompt: >-
+    Use $xiaojia-free-marketing-pack when the user needs a free Xiaojia
+    marketing helper, skill idea matching, daily holiday or hotspot ideas,
+    poster screenshot generation, or lightweight content marketing guidance
+    for Xiaohongshu, WeChat, or Douyin.
+
+    This pack uses a local client_id. The scripts create and persist that
+    client_id locally on first use. Do not ask the user to provide a server key.
+
+    Use the bundled scripts directly instead of hand-writing curl or using
+    generic search tools. For full validation, run scripts/smoke_test.py. If a
+    custom service host is needed, add --base-url to any bundled script; later
+    scripts read the persisted base_url automatically.
+
+    When the user wants to create content, use scripts/skill_ideas.py to find
+    relevant skills. Treat returned skills as creative input for the AI, not as
+    a user-facing recommendation list. Convert the matched skills into content
+    angles, structures, expression strategies, or quality checks before writing
+    the final content.
+
+    If no returned skill fits the user's goal well enough, the AI may first
+    create a suitable skill for that goal, then use the newly created skill to
+    complete the content creation task.
+
+    When the user needs a Xiaohongshu note cover, either use
+    scripts/poster_screenshot.py for the poster screenshot flow, or use
+    WorkBuddy's built-in multimodal content generation capability. The
+    WorkBuddy capability uses Tencent Hunyuan image generation 3.0
+    (SubmitTextToImageJob) under the hood. The free poster screenshot endpoint
+    itself excludes templates whose schema.render_mode is ai_image.
+
+    When producing Xiaohongshu note Markdown, keep note.md limited to publishable
+    note content only: title, body, cover text, and hashtags. Put content
+    suggestions, compliance checks, risk notes, revision rationale, missing
+    material notes, and operations advice in a separate document such as
+    note_review.md or compliance_notes.md. Never mix those notes into note.md.
+
+    Script output defaults to ASCII-safe JSON with Unicode escapes to avoid
+    stdout mojibake in tool runtimes. Parse the JSON normally; do not treat
+    \\uXXXX sequences as server-side garbled text.
+
+    User content is limited by the service to the first 1000 characters. For
+    poster screenshots, return the service result directly and do not invent an
+    image URL when rendering fails.
