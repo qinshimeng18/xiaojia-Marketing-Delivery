@@ -7,7 +7,7 @@ from _common import build_skill_thumbnail_upload_payload, get_default_timeout, o
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Upload a local Skill thumbnail through JustAI OpenAPI.")
-    parser.add_argument("--file", required=True, help="Local png thumbnail path.")
+    parser.add_argument("--file", required=True, help="Local png/webp thumbnail path.")
     parser.add_argument(
         "--timeout",
         type=int,

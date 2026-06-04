@@ -436,13 +436,13 @@ def build_image_upload_payload(image_file: str, field_name: str = "--file") -> d
 
 def build_skill_thumbnail_upload_payload(thumbnail_file: str) -> dict:
     image_path, file_data, content_type = read_local_image_file(thumbnail_file, field_name="--file")
-    if content_type != "image/png":
-        raise SystemExit("Skill thumbnail upload only supports png images.")
+    if content_type not in {"image/png", "image/webp"}:
+        raise SystemExit("Skill thumbnail upload only supports png and webp images.")
     encoded = base64.b64encode(file_data).decode("ascii")
     return {
         "file_name": image_path.name,
-        "file_data": f"data:image/png;base64,{encoded}",
-        "content_type": "image/png",
+        "file_data": f"data:{content_type};base64,{encoded}",
+        "content_type": content_type,
     }
 
 

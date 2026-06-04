@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import base64
+import io
 import json
 import os
 from pathlib import Path
@@ -15,6 +17,16 @@ import create_skill
 import generate_image as generate_image_script
 import list_skills
 import update_skill
+
+
+PNG_BYTES = (
+    b"\x89PNG\r\n\x1a\n"
+    b"\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+    b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+    b"\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xdc"
+    b"\xb48\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+WEBP_BYTES = b"RIFF\x18\x00\x00\x00WEBPVP8 \x0c\x00\x00\x00/\x00\x00\x00\x10\x07\x10\x11\x11\x88\x88"
 
 
 class SkillCrudScriptTests(unittest.TestCase):
@@ -57,6 +69,131 @@ class SkillCrudScriptTests(unittest.TestCase):
         self.assertEqual(payload["priority"], 12)
         self.assertTrue(payload["enabled"])
         self.assertFalse(payload["market_prompt_visible"])
+
+    def test_create_skill_sends_thumbnail_file_with_create(self):
+        captured = []
+
+        def fake_open_json(request, timeout):
+            body = json.loads(request.data.decode("utf-8"))
+            captured.append({"url": request.full_url, "timeout": timeout, "body": body})
+            return {"status": 0, "data": {"skill_id": "skill_cli_thumbnail"}}
+
+        with TemporaryDirectory() as tmp_dir:
+            thumbnail_path = Path(tmp_dir) / "cover.png"
+            thumbnail_path.write_bytes(PNG_BYTES)
+
+            argv = [
+                "create_skill.py",
+                "--name",
+                "本地封面 Skill",
+                "--description",
+                "desc",
+                "--prompt-content",
+                "prompt",
+                "--thumbnail-file",
+                str(thumbnail_path),
+                "--timeout",
+                "300",
+            ]
+            with patch.dict(
+                os.environ,
+                {
+                    "JUSTAI_OPENAPI_BASE_URL": "https://example.com",
+                    "JUSTAI_OPENAPI_API_KEY": "demo-key",
+                },
+                clear=True,
+            ), patch.object(_common, "open_json", side_effect=fake_open_json), patch.object(
+                sys, "argv", argv
+            ), patch(
+                "builtins.print"
+            ):
+                exit_code = create_skill.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual([item["url"] for item in captured], ["https://example.com/openapi/skills/create"])
+        create_body = captured[0]["body"]
+        encoded = str(create_body["thumbnail_file_data"]).split(",", 1)[-1]
+        self.assertEqual(base64.b64decode(encoded, validate=True), PNG_BYTES)
+        self.assertEqual(create_body["thumbnail_file_name"], "cover.png")
+        self.assertEqual(create_body["thumbnail_content_type"], "image/png")
+        self.assertNotIn("thumbnail", create_body)
+        self.assertEqual(create_body["prompt_content"], "prompt")
+        self.assertEqual([item["timeout"] for item in captured], [300])
+
+    def test_create_skill_sends_webp_thumbnail_file_with_create(self):
+        captured = []
+
+        def fake_open_json(request, timeout):
+            body = json.loads(request.data.decode("utf-8"))
+            captured.append({"url": request.full_url, "timeout": timeout, "body": body})
+            return {"status": 0, "data": {"skill_id": "skill_cli_webp_thumbnail"}}
+
+        with TemporaryDirectory() as tmp_dir:
+            thumbnail_path = Path(tmp_dir) / "cover.webp"
+            thumbnail_path.write_bytes(WEBP_BYTES)
+
+            argv = [
+                "create_skill.py",
+                "--name",
+                "本地 WebP 封面 Skill",
+                "--description",
+                "desc",
+                "--prompt-content",
+                "prompt",
+                "--thumbnail-file",
+                str(thumbnail_path),
+                "--timeout",
+                "300",
+            ]
+            with patch.dict(
+                os.environ,
+                {
+                    "JUSTAI_OPENAPI_BASE_URL": "https://example.com",
+                    "JUSTAI_OPENAPI_API_KEY": "demo-key",
+                },
+                clear=True,
+            ), patch.object(_common, "open_json", side_effect=fake_open_json), patch.object(
+                sys, "argv", argv
+            ), patch(
+                "builtins.print"
+            ):
+                exit_code = create_skill.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual([item["url"] for item in captured], ["https://example.com/openapi/skills/create"])
+        create_body = captured[0]["body"]
+        self.assertEqual(create_body["thumbnail_file_name"], "cover.webp")
+        self.assertEqual(create_body["thumbnail_content_type"], "image/webp")
+        self.assertTrue(create_body["thumbnail_file_data"].startswith("data:image/webp;base64,"))
+        encoded = str(create_body["thumbnail_file_data"]).split(",", 1)[-1]
+        self.assertEqual(base64.b64decode(encoded, validate=True), WEBP_BYTES)
+        self.assertNotIn("thumbnail", create_body)
+        self.assertEqual(create_body["prompt_content"], "prompt")
+        self.assertEqual([item["timeout"] for item in captured], [300])
+
+    def test_create_skill_rejects_thumbnail_url_and_file_together(self):
+        with TemporaryDirectory() as tmp_dir:
+            thumbnail_path = Path(tmp_dir) / "cover.png"
+            thumbnail_path.write_bytes(PNG_BYTES)
+            argv = [
+                "create_skill.py",
+                "--name",
+                "互斥封面",
+                "--description",
+                "desc",
+                "--prompt-content",
+                "prompt",
+                "--thumbnail",
+                "https://cdn.example.com/old.png",
+                "--thumbnail-file",
+                str(thumbnail_path),
+            ]
+
+            stderr = io.StringIO()
+            with patch.object(sys, "argv", argv), patch("sys.stderr", stderr), self.assertRaises(SystemExit):
+                create_skill.main()
+
+        self.assertRegex(stderr.getvalue(), r"--thumbnail.*--thumbnail-file|--thumbnail-file.*--thumbnail")
 
     def test_update_skill_requires_a_field_besides_skill_id(self):
         args = SimpleNamespace(
@@ -195,6 +332,17 @@ class SkillCrudScriptTests(unittest.TestCase):
         self.assertEqual(thumbnail_payload["file_name"], "thumb.png")
         self.assertEqual(thumbnail_payload["content_type"], "image/png")
         self.assertTrue(thumbnail_payload["file_data"].startswith("data:image/png;base64,"))
+
+    def test_skill_thumbnail_payload_accepts_webp(self):
+        with TemporaryDirectory() as tmp_dir:
+            image_path = Path(tmp_dir) / "thumb.webp"
+            image_path.write_bytes(WEBP_BYTES)
+
+            thumbnail_payload = _common.build_skill_thumbnail_upload_payload(str(image_path))
+
+        self.assertEqual(thumbnail_payload["file_name"], "thumb.webp")
+        self.assertEqual(thumbnail_payload["content_type"], "image/webp")
+        self.assertTrue(thumbnail_payload["file_data"].startswith("data:image/webp;base64,"))
 
     def test_openapi_skill_helpers_use_expected_endpoints(self):
         captured = []

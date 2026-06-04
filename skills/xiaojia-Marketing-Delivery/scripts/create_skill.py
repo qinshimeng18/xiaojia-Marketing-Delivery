@@ -3,6 +3,7 @@ import argparse
 import json
 
 from _common import (
+    build_skill_thumbnail_upload_payload,
     get_default_timeout,
     openapi_create_skill,
     openapi_get_skill,
@@ -31,6 +32,12 @@ def build_payload(args) -> dict:
     for key, value in optional_fields.items():
         if value not in (None, ""):
             payload[key] = value
+    thumbnail_file = str(getattr(args, "thumbnail_file", "") or "").strip()
+    if thumbnail_file:
+        thumbnail_payload = build_skill_thumbnail_upload_payload(thumbnail_file)
+        payload["thumbnail_file_name"] = thumbnail_payload["file_name"]
+        payload["thumbnail_file_data"] = thumbnail_payload["file_data"]
+        payload["thumbnail_content_type"] = thumbnail_payload["content_type"]
     if args.applicable_stage:
         payload["applicable_stages"] = args.applicable_stage
     if args.priority is not None:
@@ -50,7 +57,9 @@ def main() -> int:
     parser.add_argument("--description", required=True, help="Skill description.")
     parser.add_argument("--prompt-content", default="", help="Skill prompt content.")
     parser.add_argument("--prompt-file", default="", help="Read skill prompt content from a UTF-8 file.")
-    parser.add_argument("--thumbnail", default="", help="Optional thumbnail URL.")
+    thumbnail_group = parser.add_mutually_exclusive_group()
+    thumbnail_group.add_argument("--thumbnail", default="", help="Optional thumbnail URL.")
+    thumbnail_group.add_argument("--thumbnail-file", default="", help="Attach a local png/webp thumbnail file to create.")
     parser.add_argument("--category", default="", help="Optional category, such as note/article/ppt.")
     parser.add_argument("--keywords", default="", help="Optional comma-separated keywords.")
     parser.add_argument("--market-status", default="", help="Optional market status: off/listed.")
