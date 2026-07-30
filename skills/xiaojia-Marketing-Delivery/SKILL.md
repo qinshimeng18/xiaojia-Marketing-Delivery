@@ -86,16 +86,18 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 
 ## OpenAPI 接入
 
-直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊时，必须先读取：
+按任务需要读取对应文档：
 
-- `references/agent-chat-stream-api.md`
+- 直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊：`references/agent-chat-stream-api.md`
+- 查询积分余额、预占积分、扣费或退款明细：`references/credits-api.md`
 
-该文档定义 `/openapi/agent/chat_stream` 的请求参数、六类公开事件、表单续聊、部分成功、错误码和重试边界。
+两份文档分别定义 `/openapi/agent/chat_stream` 的流式协议，以及 `/openapi/credits/balance`、`/openapi/credits/usage` 的同步 JSON 协议。积分接口已经存在，不要重复实现积分功能。
 
 - 宿主支持 Tool/Skill 流式输出时，可逐块展示 `message`
 - 宿主只能一次性返回 Tool 结果时，仍需完整消费 SSE，并在 `done` 后聚合交付
 - 宿主不适合维护长连接时，继续使用现有 `chat_submit + chat_result` 脚本
 - 本轮不依赖官方 CLI；`input_required` 由 AI 通过自然语言收集，再提交 `form_data`
+- 用户询问当前积分时查询余额接口；询问某次会话消耗时使用 `conversation_id` 查询明细接口
 
 ## Workflow
 

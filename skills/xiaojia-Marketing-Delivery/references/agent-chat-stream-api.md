@@ -479,3 +479,7 @@ https://justailab.com/pages/agent/preview?conversation_id=<conversation_id>
 5. 部分成功时先交付已生成结果，再说明 `error.message`。
 
 不要把内部 SSE、心跳、错误堆栈、API Key 或未公开工作流字段直接返回给用户。
+
+## 13. 相关文档
+
+- [积分余额与消耗明细 API](credits-api.md)
