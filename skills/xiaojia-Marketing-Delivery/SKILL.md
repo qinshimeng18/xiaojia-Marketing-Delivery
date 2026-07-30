@@ -84,6 +84,21 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 7. `upload_thumbnail.py` 上传本地 Skill 封面图
 8. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
 
+## OpenAPI 接入
+
+按任务需要读取对应文档：
+
+- 直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊：`references/agent-chat-stream-api.md`
+- 查询积分余额、预占积分、扣费或退款明细：`references/credits-api.md`
+
+两份文档分别定义 `/openapi/agent/chat_stream` 的流式协议，以及 `/openapi/credits/balance`、`/openapi/credits/usage` 的同步 JSON 协议。积分接口已经存在，不要重复实现积分功能。
+
+- 宿主支持 Tool/Skill 流式输出时，可逐块展示 `message`
+- 宿主只能一次性返回 Tool 结果时，仍需完整消费 SSE，并在 `done` 后聚合交付
+- 宿主不适合维护长连接时，继续使用现有 `chat_submit + chat_result` 脚本
+- 本轮不依赖官方 CLI；`input_required` 由 AI 通过自然语言收集，再提交 `form_data`
+- 用户询问当前积分时查询余额接口；询问某次会话消耗时使用 `conversation_id` 查询明细接口
+
 ## Workflow
 
 1. 先静默完成登录检查，不要把登录状态确认问题抛给用户；如果登录检查通过，直接继续后续营销任务，不要再和用户确认登录；如果登录检查失败或确认未登录，再进入登录流程

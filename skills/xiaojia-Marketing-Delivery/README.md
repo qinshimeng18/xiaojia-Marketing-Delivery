@@ -135,6 +135,13 @@ xiaojia-Marketing-Delivery
 
 ## 推荐工作流
 
+需要直接通过 API 接入、消费流式文本、处理结构化结果或实现表单续聊时，参见：
+
+- [小加 Agent Chat Stream API 完整接入文档](references/agent-chat-stream-api.md)
+- [小加积分余额与消耗明细 API 文档](references/credits-api.md)
+
+现有脚本默认使用 `chat_submit + chat_result` 提交并轮询，保持兼容。能够消费 SSE 的 AI Agent、Skill 或服务端宿主，也可以直接调用 `POST /openapi/agent/chat_stream`；宿主不能把工具增量实时展示给用户时，完整消费后一次性返回即可，不要求额外开发 CLI。
+
 ### 1. 先完成登录
 
 系统先静默检查登录状态。登录检查通过后直接进入后续营销任务；只有登录检查失败或确认未登录，才进入登录流程。
