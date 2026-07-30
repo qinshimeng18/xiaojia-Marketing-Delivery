@@ -84,6 +84,19 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 7. `upload_thumbnail.py` 上传本地 Skill 封面图
 8. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
 
+## OpenAPI 接入
+
+直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊时，必须先读取：
+
+- `references/agent-chat-stream-api.md`
+
+该文档定义 `/openapi/agent/chat_stream` 的请求参数、六类公开事件、表单续聊、部分成功、错误码和重试边界。
+
+- 宿主支持 Tool/Skill 流式输出时，可逐块展示 `message`
+- 宿主只能一次性返回 Tool 结果时，仍需完整消费 SSE，并在 `done` 后聚合交付
+- 宿主不适合维护长连接时，继续使用现有 `chat_submit + chat_result` 脚本
+- 本轮不依赖官方 CLI；`input_required` 由 AI 通过自然语言收集，再提交 `form_data`
+
 ## Workflow
 
 1. 先静默完成登录检查，不要把登录状态确认问题抛给用户；如果登录检查通过，直接继续后续营销任务，不要再和用户确认登录；如果登录检查失败或确认未登录，再进入登录流程
