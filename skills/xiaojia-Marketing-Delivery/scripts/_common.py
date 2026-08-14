@@ -19,6 +19,7 @@ IMAGE_UPLOAD_ALLOWED_CONTENT_TYPES = {
     "image/jpeg": ".jpg",
     "image/webp": ".webp",
 }
+IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 DEFAULT_LOGIN_POLL_INTERVAL = 2
 MARKETING_PAYMENT_URL = "https://justailab.com/pages/agent/preview"
 API_KEY_ENV_NAME = "JUSTAI_OPENAPI_API_KEY"
@@ -424,18 +425,8 @@ def read_local_image_file(image_file: str, field_name: str = "--file") -> tuple[
     return image_path, file_data, content_type
 
 
-def build_image_upload_payload(image_file: str, field_name: str = "--file") -> dict:
-    image_path, file_data, content_type = read_local_image_file(image_file, field_name=field_name)
-    encoded = base64.b64encode(file_data).decode("ascii")
-    return {
-        "file_name": image_path.name,
-        "image_base64": f"data:{content_type};base64,{encoded}",
-        "content_type": content_type,
-    }
-
-
 def build_skill_thumbnail_upload_payload(thumbnail_file: str) -> dict:
-    image_path, file_data, content_type = read_local_image_file(thumbnail_file, field_name="--file")
+    image_path, file_data, content_type = read_local_image_file(thumbnail_file, field_name="--thumbnail-file")
     if content_type not in {"image/png", "image/webp"}:
         raise SystemExit("Skill thumbnail upload only supports png and webp images.")
     encoded = base64.b64encode(file_data).decode("ascii")
@@ -446,41 +437,19 @@ def build_skill_thumbnail_upload_payload(thumbnail_file: str) -> dict:
     }
 
 
-def openapi_upload_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
-    return open_json(
-        build_request("/openapi/images/upload", payload, get_api_key(timeout=timeout)),
-        timeout=timeout,
+def build_image_upload_payload(image_file: str) -> dict:
+    image_path, file_data, content_type = read_local_image_file(
+        image_file,
+        field_name="--image-file",
     )
-
-
-def openapi_upload_skill_thumbnail(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
-    return open_json(
-        build_request("/openapi/skills/upload_thumbnail", payload, get_api_key(timeout=timeout)),
-        timeout=timeout,
-    )
-
-
-def upload_image_file(image_file: str, timeout: int = DEFAULT_TIMEOUT, field_name: str = "--file") -> str:
-    result = openapi_upload_image(build_image_upload_payload(image_file, field_name=field_name), timeout=timeout)
-    if result.get("status") != "ok":
-        message = result.get("message") or result.get("msg") or "image upload failed"
-        raise SystemExit(message)
-    image_url = str(result.get("url") or "").strip()
-    if not image_url:
-        raise SystemExit("image upload did not return a URL.")
-    return image_url
-
-
-def upload_skill_thumbnail_file(thumbnail_file: str, timeout: int = DEFAULT_TIMEOUT) -> str:
-    result = openapi_upload_skill_thumbnail(build_skill_thumbnail_upload_payload(thumbnail_file), timeout=timeout)
-    if result.get("status") != 0:
-        message = result.get("message") or result.get("msg") or "thumbnail upload failed"
-        raise SystemExit(message)
-    data = result.get("data") or {}
-    thumbnail_url = str(data.get("thumbnail") or data.get("url") or "").strip()
-    if not thumbnail_url:
-        raise SystemExit("thumbnail upload did not return a URL.")
-    return thumbnail_url
+    if len(file_data) > IMAGE_UPLOAD_MAX_BYTES:
+        raise SystemExit("Reference image cannot exceed 10MB.")
+    encoded = base64.b64encode(file_data).decode("ascii")
+    return {
+        "file_name": image_path.name,
+        "image_base64": f"data:{content_type};base64,{encoded}",
+        "content_type": content_type,
+    }
 
 
 def openapi_create_skill(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
@@ -514,6 +483,20 @@ def openapi_delete_skill(skill_id: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
 def openapi_generate_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
     return open_json(
         build_request("/openapi/images/generate", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_upload_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    return open_json(
+        build_request("/openapi/images/upload", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_image_result(job_id: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    return open_json(
+        build_request("/openapi/images/result", {"job_id": job_id}, get_api_key(timeout=timeout)),
         timeout=timeout,
     )
 

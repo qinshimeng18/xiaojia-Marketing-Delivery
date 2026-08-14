@@ -117,6 +117,41 @@ xiaojia-Marketing-Delivery
 > [!NOTE]
 > 安装方式就是这么简单。把这个独立 skill 仓库地址给 Agent，然后说“帮我安装 `xiaojia-Marketing-Delivery`”就够了。
 
+### DeepSeek Harness
+
+仓库同时提供可发布到 npm 的 DeepSeek Harness bundle。安装后会注册小加对话、项目、Skill、图片和积分工具，并自动加载 `xiaojia-marketing-delivery` Skill。
+
+从 npm 安装到 Web profile：
+
+```bash
+dsh plugin --profile web add dsh-xiaojia-marketing-delivery
+dsh web
+```
+
+需要在无界面的 Harness 中调用时，安装到 `headless` profile：
+
+```bash
+dsh plugin --profile headless add dsh-xiaojia-marketing-delivery
+dsh --profile headless "调用小加生成一套新品营销图文"
+```
+
+已有小加 Skill 登录凭证会被自动复用，不需要重复登录，也不会要求把凭证写进 DSH profile。首次安装且本机没有现有凭证时，参见 [DeepSeek Harness 安装与凭证配置](https://github.com/qinshimeng18/xiaojia-Marketing-Delivery/blob/main/skills/xiaojia-Marketing-Delivery/references/deepseek-harness-install.md)。
+
+从仓库 checkout 做本地安装和联调：
+
+```bash
+git clone https://github.com/qinshimeng18/xiaojia-Marketing-Delivery.git
+python3 ./xiaojia-Marketing-Delivery/skills/xiaojia-Marketing-Delivery/scripts/list_projects.py
+dsh plugin --profile web add ./xiaojia-Marketing-Delivery/skills/xiaojia-Marketing-Delivery
+dsh web
+```
+
+插件不会把 API Key 写入 DSH profile，也不会在工具参数或返回内容中暴露凭证。
+
+已有 OpenClaw、Claude、Codex 等安装方式和 Python 脚本保持不变。
+
+维护者发布 npm 包前请阅读 [`PUBLISHING.md`](PUBLISHING.md)。
+
 ## 登录说明
 
 你不需要自己准备任何环境变量，也不需要自己准备 API key。
@@ -139,6 +174,7 @@ xiaojia-Marketing-Delivery
 
 - [小加 Agent Chat Stream API 完整接入文档](references/agent-chat-stream-api.md)
 - [小加积分余额与消耗明细 API 文档](references/credits-api.md)
+- [小加图片生成 API 文档](references/images-api.md)
 
 现有脚本默认使用 `chat_submit + chat_result` 提交并轮询，保持兼容。能够消费 SSE 的 AI Agent、Skill 或服务端宿主，也可以直接调用 `POST /openapi/agent/chat_stream`；宿主不能把工具增量实时展示给用户时，完整消费后一次性返回即可，不要求额外开发 CLI。
 
@@ -166,8 +202,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py" --source personal --enabled
 python3 "${CLAUDE_SKILL_DIR}/scripts/create_skill.py" --name "自动化测试 Skill" --description "用于自动化测试" --prompt-file "./prompt.md" --category "note" --verify
 python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" --skill-id "skill_xxx" --prompt-content "新的测试 prompt" --verify
 python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" --prompt "一张适合咖啡店开业活动的小红书封面图" --model image-2 --pic-scale "3:4"
-python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "./reference.png"
-python3 "${CLAUDE_SKILL_DIR}/scripts/upload_thumbnail.py" --file "./skill-thumbnail.png"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --message "帮我做一份护肤品牌新品营销方案"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" --conversation-id "your-conversation-id"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --conversation-id "your-conversation-id" --message "继续扩写成适合小红书发布的图文笔记"
@@ -205,21 +239,23 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
   --pic-scale "3:4"
 ```
 
-`--model` 可选：`image-2`、`image-flash`、`doubao-5.0`。默认 `image-2`；失败会自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。需要绕过内置选项时再用 `--req-key`。
-
-上传本地图片：
+图生图使用本地参考图时，脚本会自动上传 COS 后调用生图接口：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "./reference.png"
+python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
+  --prompt "保持主体不变，把背景改成海边日落" \
+  --image-file "/absolute/path/reference.png" \
+  --model image-2 \
+  --pic-scale "3:4"
 ```
 
-上传本地 Skill 封面图：
+已有 JustAI COS 地址时可改用 `--image-url`。多图可重复传入两个参数，最多 14 张；支持 PNG、JPEG、WebP。
 
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/upload_thumbnail.py" --file "./skill-thumbnail.png"
-```
+`--model` 可选：`image-2`、`image-flash`、`doubao-5.0`。默认 `image-2`；普通供应商失败会自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。内容审核失败沿用项目通用策略，提前尝试豆包一次，豆包仍失败则终止。需要绕过内置选项时再用 `--req-key`。
 
-`upload_image.py` 走 `/openapi/images/upload`，支持 `png/jpeg/webp`。`upload_thumbnail.py` 走 `/openapi/skills/upload_thumbnail`，用于 Skill 封面，要求 `png`。
+脚本默认先做 AI 生图提示词增强；明确需要原词直出时使用 `--raw-prompt`。重试同一请求时复用 `--idempotency-key`，服务端会返回原任务，不会重复提交或重复预占积分。
+
+脚本显式选择“快速提交 + 轮询结果”，不会让单个 HTTP 请求等待整段生成时间；`--max-wait-time` 覆盖休眠和查询的总预算。完整协议见 [图片生成 API 文档](references/images-api.md)。
 
 创建或更新内部 Skill，用于自动化测试准备：
 
@@ -234,11 +270,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/create_skill.py" \
 python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
   --skill-id "skill_xxx" \
   --prompt-content "新的测试 prompt" \
-  --verify
-
-python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
-  --skill-id "skill_xxx" \
-  --enabled true \
   --verify
 ```
 
@@ -303,7 +334,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 返回结果时优先读取结构化 `result`
 - 处理小红书图文结果时，把标题、正文、图片链接和 `web_url` 一起交付
 - 用户不需要自己准备环境变量，也不需要自己准备 API key
-- 登录后系统会自动创建 API key 并放到环境变量中，这个过程不会影响用户已有内容和其他变量
+- 登录后系统会自动创建 API key 并保存到本地登录配置中，插件会自动读取，不会影响用户已有内容和其他变量
 - 先静默完成登录检查，不要把登录状态确认问题抛给用户
 - 如果登录检查通过，就直接继续使用，不会再反复要求你确认是否登录
 - 只有登录检查失败或确认未登录，我们才会让你进入登录流程
