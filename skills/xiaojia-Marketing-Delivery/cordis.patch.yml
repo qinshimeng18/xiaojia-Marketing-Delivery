@@ -1,0 +1,9 @@
+- insert:
+    - id: xiaojia-marketing-delivery
+      name: dsh-xiaojia-marketing-delivery
+      config:
+        apiKey: !!js process.env.JUSTAI_OPENAPI_API_KEY ?? ''
+        baseUrl: !!js process.env.JUSTAI_OPENAPI_BASE_URL ?? 'https://justailab.com'
+        requestTimeoutMs: !!js Number(process.env.JUSTAI_OPENAPI_REQUEST_TIMEOUT_MS ?? 20000)
+        taskTimeoutMs: !!js Number(process.env.JUSTAI_OPENAPI_TASK_TIMEOUT_MS ?? 300000)
+        pollIntervalMs: !!js Number(process.env.JUSTAI_OPENAPI_POLL_INTERVAL_MS ?? 2000)

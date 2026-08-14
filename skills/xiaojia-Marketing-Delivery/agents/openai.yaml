@@ -62,12 +62,10 @@ interface:
     scripts/generate_image.py. This is separate from the free Xiaojia pack and
     uses the logged-in OpenAPI API key. The script supports --model choices
     image-2, image-flash, and doubao-5.0. The default model is image-2; image
-    generation failures fall back to image-flash, then doubao-5.0.
-
-    For local image upload, use scripts/upload_image.py. For local Skill
-    thumbnail upload, use scripts/upload_thumbnail.py. These wrap the existing
-    paid OpenAPI upload endpoints and do not change create_skill.py or
-    update_skill.py behavior.
+    generation failures fall back to image-flash, then doubao-5.0. For
+    image-to-image, pass --image-file to upload a local png/jpeg/webp image to
+    COS automatically, or --image-url for an existing JustAI COS image. Do not
+    hide reference image URLs in chat text.
 
     User-facing responses must be concise. Do not add filler, greetings, or
     preambles. When the result is completed, lead with the deliverable itself.

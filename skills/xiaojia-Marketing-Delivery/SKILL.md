@@ -80,9 +80,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 3. `chat.py` 提交任务并拿到 `conversation_id`
 4. `chat_result.py` 查询最终结果
 5. `generate_image.py` 调用付费版 OpenAPI 自由生图接口
-6. `upload_image.py` 上传本地营销素材图片
-7. `upload_thumbnail.py` 上传本地 Skill 封面图
-8. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
+6. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
 
 ## OpenAPI 接入
 
@@ -90,6 +88,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 
 - 直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊：`references/agent-chat-stream-api.md`
 - 查询积分余额、预占积分、扣费或退款明细：`references/credits-api.md`
+- 调用自由生图、避免单次请求超时、轮询生图结果：`references/images-api.md`
 
 两份文档分别定义 `/openapi/agent/chat_stream` 的流式协议，以及 `/openapi/credits/balance`、`/openapi/credits/usage` 的同步 JSON 协议。积分接口已经存在，不要重复实现积分功能。
 
@@ -172,15 +171,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
   --verify
 ```
 
-Explicitly enable or disable an internal Skill:
-
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/update_skill.py" \
-  --skill-id "skill_xxx" \
-  --enabled true \
-  --verify
-```
-
 Run a new turn:
 
 ```bash
@@ -203,21 +193,21 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
   --pic-scale "3:4"
 ```
 
-默认生图模型是 `image-2`；失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。
-
-Upload a local image:
+图生图可直接传本地图片，脚本会先调用 `/openapi/images/upload` 上传 COS，再把返回的 URL 作为参考图提交：
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "./reference.png"
+python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
+  --prompt "保持人物和产品不变，把背景改成海边日落" \
+  --image-file "/absolute/path/reference.png" \
+  --model image-2 \
+  --pic-scale "3:4"
 ```
 
-Upload a local Skill thumbnail:
+已有本服务 COS 图片时使用 `--image-url`。多张参考图可重复传入 `--image-file` 或 `--image-url`，最多 14 张；只支持 PNG、JPEG、WebP。不要把图片 URL 隐式塞进聊天文本来代替专用参数。
 
-```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/upload_thumbnail.py" --file "./skill-thumbnail.png"
-```
-
-`upload_image.py` uses `/openapi/images/upload` for png/jpeg/webp images. `upload_thumbnail.py` uses `/openapi/skills/upload_thumbnail` for png Skill thumbnails.
+默认生图模型是 `image-2`；普通供应商失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。内容审核失败沿用项目通用策略，提前尝试豆包一次，豆包仍失败则终止。
+脚本默认先调用线上同源的 AI 提示词增强，再提交生图；只有用户明确要求原词直出时才加 `--raw-prompt`。同一次重试应复用 `--idempotency-key`，避免重复提交和重复预占积分。
+脚本会显式发送 `wait_for_completion=false`，先提交任务再轮询结果；`--max-wait-time` 是包含休眠和查询的总预算，不要让宿主等待单个 `/images/generate` 请求完成。
 
 Continue an existing turn:
 
@@ -260,7 +250,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 当用户给了明确资料范围，优先使用 `project_id`
 - 当用户想用特定营销能力链路时，优先使用 `skill_id`
 - 当任务是创建、更新、验证或清理 JustAI 内部 Skill 时，使用 `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py`；这些脚本通过 OpenAPI API key 调用 `/openapi/skills/*`，不要要求用户提供 `Session-Id`
-- `update_skill.py --enabled true/false` 只在显式传入时改变启用状态；省略时保留原状态，避免误启用已停用 Skill
 - 返回结果时优先读 `result`，不要只读顶层 `text`
 - 如果 `chat_result.py` 还在输出 `status=running`，说明营销内容仍在生成，不能过早判断“没有图片”或“没有结果”
 - 对 `generate_notes`、`generate_image` 这类慢分支，除非用户明确要求，否则不要把 `chat_result.py --timeout` 设成小于 `300`

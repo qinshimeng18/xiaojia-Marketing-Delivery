@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **DeepSeek Harness plugin** — Added an installable DSH bundle exposing Xiaojia chat, projects, Skill management, image generation and credit tools, together with the bundled `xiaojia-marketing-delivery` Skill.
+- **npm distribution** — Added public package metadata, Web/headless installation guidance, package-content tests and a repeatable release checklist for `dsh-xiaojia-marketing-delivery`.
 - **Internal Skill automation scripts** — Added `create_skill.py`, `update_skill.py`, `get_skill.py`, and `delete_skill.py` for managing JustAI internal Skills through OpenAPI API keys. These scripts support automated test setup and cleanup without requiring `Session-Id`.
 - **Internal Skill list filters** — Expanded `list_skills.py` to match the backend Skill query options, including `source`, `enabled`, `category`, `sort_by`, pagination, details, and featured filters.
 - **Skill enablement updates** — Added `update_skill.py --enabled true/false` so existing Skills can be explicitly enabled or disabled during updates.
@@ -17,4 +19,5 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Credential reuse** — The DSH plugin reuses explicit plugin configuration, the current environment or existing Xiaojia Skill login configuration without writing credentials into a DSH profile.
 - **Python 3.7+ support** — Added `from __future__ import annotations` to support Python 3.7 and above. Previously required Python 3.10+ due to `X | Y` type annotation syntax.

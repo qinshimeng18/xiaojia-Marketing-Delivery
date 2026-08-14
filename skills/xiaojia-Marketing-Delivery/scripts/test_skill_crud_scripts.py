@@ -210,37 +210,12 @@ class SkillCrudScriptTests(unittest.TestCase):
             load_strategy="",
             applicable_stage=[],
             priority=None,
-            enabled="",
             share_prompt_visible="",
             market_prompt_visible="",
         )
 
         with self.assertRaises(SystemExit):
             update_skill.build_payload(args)
-
-    def test_update_skill_builds_payload_with_enabled(self):
-        args = SimpleNamespace(
-            skill_id="skill_x",
-            name="",
-            description="",
-            prompt_content="",
-            prompt_file="",
-            thumbnail="",
-            category="",
-            keywords="",
-            market_status="",
-            review_status="",
-            load_strategy="",
-            applicable_stage=[],
-            priority=None,
-            enabled="false",
-            share_prompt_visible="",
-            market_prompt_visible="",
-        )
-
-        payload = update_skill.build_payload(args)
-
-        self.assertEqual(payload, {"skill_id": "skill_x", "enabled": False})
 
     def test_list_skills_builds_full_internal_query_payload(self):
         args = SimpleNamespace(
@@ -287,6 +262,7 @@ class SkillCrudScriptTests(unittest.TestCase):
             max_wait_time=120,
             poll_interval=3,
             no_wait=True,
+            image_url=["https://cos.justailab.xyz/media/images/reference.png"],
         )
 
         payload = generate_image_script.build_payload(args)
@@ -299,6 +275,12 @@ class SkillCrudScriptTests(unittest.TestCase):
         self.assertEqual(payload["conversation_id"], "img_c1")
         self.assertEqual(payload["negative_prompt"], "低清")
         self.assertFalse(payload["wait_for_completion"])
+        self.assertEqual(payload["prompt_mode"], "enhanced")
+        self.assertTrue(payload["idempotency_key"])
+        self.assertEqual(
+            payload["image_urls"],
+            ["https://cos.justailab.xyz/media/images/reference.png"],
+        )
 
     def test_generate_image_requires_prompt(self):
         args = SimpleNamespace(
@@ -313,36 +295,157 @@ class SkillCrudScriptTests(unittest.TestCase):
             max_wait_time=300,
             poll_interval=5,
             no_wait=False,
+            image_url=[],
         )
 
         with self.assertRaises(SystemExit):
             generate_image_script.build_payload(args)
 
-    def test_image_upload_payloads_use_existing_openapi_shapes(self):
+    def test_generate_image_main_submits_then_polls(self):
+        argv = [
+            "generate_image.py",
+            "--prompt",
+            "咖啡店封面",
+            "--poll-interval",
+            "1",
+            "--timeout",
+            "60",
+        ]
+        with patch.object(sys, "argv", argv), patch.object(
+            generate_image_script,
+            "openapi_generate_image",
+            return_value={"status": "ok", "generation_status": "pending", "job_id": "job_x"},
+        ) as submit, patch.object(
+            generate_image_script,
+            "openapi_image_result",
+            return_value={"status": "ok", "generation_status": "completed", "job_id": "job_x"},
+        ) as poll, patch.object(generate_image_script.time, "sleep"):
+            exit_code = generate_image_script.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertFalse(submit.call_args.args[0]["wait_for_completion"])
+        self.assertEqual(submit.call_args.kwargs["timeout"], 20)
+        poll.assert_called_once_with("job_x", timeout=20)
+
+    def test_generate_image_main_uploads_local_reference_before_submit(self):
         with TemporaryDirectory() as tmp_dir:
-            image_path = Path(tmp_dir) / "thumb.png"
-            image_path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"png-data")
+            image_path = Path(tmp_dir) / "reference.png"
+            image_path.write_bytes(PNG_BYTES)
+            argv = [
+                "generate_image.py",
+                "--prompt",
+                "保持主体不变，把背景改成海边",
+                "--image-file",
+                str(image_path),
+                "--no-wait",
+            ]
+            with patch.object(sys, "argv", argv), patch.object(
+                generate_image_script,
+                "openapi_upload_image",
+                return_value={
+                    "status": "ok",
+                    "url": "https://cos.justailab.xyz/media/images/reference.png",
+                },
+            ) as upload, patch.object(
+                generate_image_script,
+                "openapi_generate_image",
+                return_value={
+                    "status": "ok",
+                    "generation_status": "pending",
+                    "job_id": "job_img2img",
+                },
+            ) as submit:
+                exit_code = generate_image_script.main()
 
-            image_payload = _common.build_image_upload_payload(str(image_path))
-            thumbnail_payload = _common.build_skill_thumbnail_upload_payload(str(image_path))
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(upload.call_args.args[0]["image_base64"].startswith("data:image/png;base64,"))
+        self.assertEqual(
+            submit.call_args.args[0]["image_urls"],
+            ["https://cos.justailab.xyz/media/images/reference.png"],
+        )
 
-        self.assertEqual(image_payload["file_name"], "thumb.png")
-        self.assertEqual(image_payload["content_type"], "image/png")
-        self.assertTrue(image_payload["image_base64"].startswith("data:image/png;base64,"))
-        self.assertEqual(thumbnail_payload["file_name"], "thumb.png")
-        self.assertEqual(thumbnail_payload["content_type"], "image/png")
-        self.assertTrue(thumbnail_payload["file_data"].startswith("data:image/png;base64,"))
-
-    def test_skill_thumbnail_payload_accepts_webp(self):
+    def test_generate_image_main_stops_when_reference_upload_fails(self):
         with TemporaryDirectory() as tmp_dir:
-            image_path = Path(tmp_dir) / "thumb.webp"
-            image_path.write_bytes(WEBP_BYTES)
+            image_path = Path(tmp_dir) / "reference.png"
+            image_path.write_bytes(PNG_BYTES)
+            argv = [
+                "generate_image.py",
+                "--prompt",
+                "修改背景",
+                "--image-file",
+                str(image_path),
+            ]
+            with patch.object(sys, "argv", argv), patch.object(
+                generate_image_script,
+                "openapi_upload_image",
+                return_value={"status": "error", "message": "upload failed"},
+            ), patch.object(
+                generate_image_script,
+                "openapi_generate_image",
+            ) as submit:
+                with self.assertRaisesRegex(SystemExit, "upload failed"):
+                    generate_image_script.main()
 
-            thumbnail_payload = _common.build_skill_thumbnail_upload_payload(str(image_path))
+        submit.assert_not_called()
 
-        self.assertEqual(thumbnail_payload["file_name"], "thumb.webp")
-        self.assertEqual(thumbnail_payload["content_type"], "image/webp")
-        self.assertTrue(thumbnail_payload["file_data"].startswith("data:image/webp;base64,"))
+    def test_generate_image_main_never_polls_after_total_deadline(self):
+        argv = [
+            "generate_image.py",
+            "--prompt",
+            "咖啡店封面",
+            "--max-wait-time",
+            "1",
+            "--poll-interval",
+            "5",
+            "--timeout",
+            "60",
+        ]
+        monotonic_values = iter([10.0, 10.0, 11.0])
+        with patch.object(sys, "argv", argv), patch.object(
+            generate_image_script,
+            "openapi_generate_image",
+            return_value={"status": "ok", "generation_status": "pending", "job_id": "job_x"},
+        ), patch.object(generate_image_script, "openapi_image_result") as poll, patch.object(
+            generate_image_script.time,
+            "monotonic",
+            side_effect=lambda: next(monotonic_values),
+        ), patch.object(generate_image_script.time, "sleep") as sleep:
+            exit_code = generate_image_script.main()
+
+        self.assertEqual(exit_code, 1)
+        sleep.assert_called_once_with(1.0)
+        poll.assert_not_called()
+
+    def test_generate_image_poll_timeout_is_capped_by_remaining_budget(self):
+        argv = [
+            "generate_image.py",
+            "--prompt",
+            "咖啡店封面",
+            "--max-wait-time",
+            "10",
+            "--poll-interval",
+            "3",
+            "--timeout",
+            "60",
+        ]
+        monotonic_values = iter([10.0, 10.0, 13.0])
+        with patch.object(sys, "argv", argv), patch.object(
+            generate_image_script,
+            "openapi_generate_image",
+            return_value={"status": "ok", "generation_status": "pending", "job_id": "job_x"},
+        ), patch.object(
+            generate_image_script,
+            "openapi_image_result",
+            return_value={"status": "ok", "generation_status": "completed", "job_id": "job_x"},
+        ) as poll, patch.object(
+            generate_image_script.time,
+            "monotonic",
+            side_effect=lambda: next(monotonic_values),
+        ), patch.object(generate_image_script.time, "sleep"):
+            exit_code = generate_image_script.main()
+
+        self.assertEqual(exit_code, 0)
+        poll.assert_called_once_with("job_x", timeout=7.0)
 
     def test_openapi_skill_helpers_use_expected_endpoints(self):
         captured = []
@@ -371,8 +474,8 @@ class SkillCrudScriptTests(unittest.TestCase):
             _common.openapi_get_skill("skill_x", timeout=13)
             _common.openapi_delete_skill("skill_x", timeout=14)
             _common.openapi_generate_image({"prompt": "画一张图"}, timeout=15)
-            _common.openapi_upload_image({"image_base64": "abc"}, timeout=16)
-            _common.openapi_upload_skill_thumbnail({"file_data": "abc"}, timeout=17)
+            _common.openapi_upload_image({"image_base64": "data:image/png;base64,eA=="}, timeout=16)
+            _common.openapi_image_result("job_x", timeout=17)
 
         self.assertEqual(
             [item["url"] for item in captured],
@@ -383,14 +486,14 @@ class SkillCrudScriptTests(unittest.TestCase):
                 "https://example.com/openapi/skills/delete",
                 "https://example.com/openapi/images/generate",
                 "https://example.com/openapi/images/upload",
-                "https://example.com/openapi/skills/upload_thumbnail",
+                "https://example.com/openapi/images/result",
             ],
         )
         self.assertEqual(captured[0]["authorization"], "Bearer demo-key")
         self.assertEqual(captured[2]["body"], {"skill_id": "skill_x"})
         self.assertEqual(captured[4]["body"], {"prompt": "画一张图"})
-        self.assertEqual(captured[5]["body"], {"image_base64": "abc"})
-        self.assertEqual(captured[6]["body"], {"file_data": "abc"})
+        self.assertEqual(captured[5]["body"], {"image_base64": "data:image/png;base64,eA=="})
+        self.assertEqual(captured[6]["body"], {"job_id": "job_x"})
         self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14, 15, 16, 17])
 
 

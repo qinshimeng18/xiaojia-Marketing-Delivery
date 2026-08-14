@@ -4,6 +4,7 @@
 ![Xiaohongshu Ready](https://img.shields.io/badge/Xiaohongshu-Ready-red)
 ![Campaign Planning](https://img.shields.io/badge/Campaign-Planning-blue)
 ![GitHub Install](https://img.shields.io/badge/Install-From%20GitHub-success)
+![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-Plugin-4b6bfb)
 
 面向真实营销交付的 AI skill 仓库。
 
@@ -49,7 +50,21 @@ xiaojia-Marketing-Delivery
 > [!NOTE]
 > 安装方式就是一句话：把这个独立 skill 仓库地址给 Agent，然后说“帮我安装 `xiaojia-Marketing-Delivery`”。
 
+### DeepSeek Harness
+
+安装到 DSH Web profile：
+
+```bash
+dsh plugin --profile web add dsh-xiaojia-marketing-delivery
+dsh web
+```
+
+无界面调用可以安装到 `headless` profile。已有小加 Skill 登录凭证会被自动复用，原有 Codex、Claude 和 OpenClaw 安装方式不受影响。
+
+完整说明见 [`skills/xiaojia-Marketing-Delivery/README.md`](skills/xiaojia-Marketing-Delivery/README.md)。
+
 ## 进一步了解
 
 - [`skills/xiaojia-Marketing-Delivery/README.md`](skills/xiaojia-Marketing-Delivery/README.md)
 - [`skills/xiaojia-Marketing-Delivery/SKILL.md`](skills/xiaojia-Marketing-Delivery/SKILL.md)
+- [`skills/xiaojia-Marketing-Delivery/references/deepseek-harness-install.md`](skills/xiaojia-Marketing-Delivery/references/deepseek-harness-install.md)
