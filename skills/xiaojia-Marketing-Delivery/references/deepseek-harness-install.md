@@ -2,11 +2,24 @@
 
 本文档面向需要直接管理 DSH profile 的开发者。普通用户已有小加 Skill 登录凭证时，无需进行本页配置，插件会自动读取本地登录配置。
 
+## 公开入口
+
+- npm 包：[`dsh-xiaojia-marketing-delivery`](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery)
+- GitHub 源码：[`qinshimeng18/xiaojia-Marketing-Delivery`](https://github.com/qinshimeng18/xiaojia-Marketing-Delivery)
+
+DeepSeek Harness 用户优先从 npm 安装；需要查看完整 Skill、Python 脚本或其他 Agent 安装方式时使用 GitHub 仓库。
+
 ## npm 安装
 
 ```bash
 dsh plugin --profile web add dsh-xiaojia-marketing-delivery
 dsh web
+```
+
+确认公开版本：
+
+```bash
+npm view dsh-xiaojia-marketing-delivery version
 ```
 
 无界面调用使用 `headless` profile：

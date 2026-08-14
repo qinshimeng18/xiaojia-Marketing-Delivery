@@ -6,6 +6,7 @@
 ![GitHub Install](https://img.shields.io/badge/Install-From%20GitHub-success)
 ![Agent Ready](https://img.shields.io/badge/Ready%20for-Agents-orange)
 ![Web Result](https://img.shields.io/badge/Web%20Result-justailab.com-6f42c1)
+[![npm version](https://img.shields.io/npm/v/dsh-xiaojia-marketing-delivery.svg)](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery)
 
 把营销需求直接推进成可交付结果的 AI skill。
 
@@ -15,6 +16,15 @@
 
 > [!TIP]
 > 这不是一个泛用聊天 prompt，而是一条面向营销交付的生产链路。它的价值在于持续生成、持续迭代、持续追踪，而不是临时写一段漂亮话。
+
+## 在哪里找到
+
+| 入口 | 用途 |
+| --- | --- |
+| [npm：`dsh-xiaojia-marketing-delivery`](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery) | DeepSeek Harness 用户直接安装插件，推荐使用这个入口 |
+| [GitHub：`xiaojia-Marketing-Delivery`](https://github.com/qinshimeng18/xiaojia-Marketing-Delivery) | 查看源码、完整文档，以及安装到 Codex、Claude、OpenClaw 等 Agent |
+
+在 npm 搜索 `dsh-xiaojia-marketing-delivery`，或者在 GitHub 搜索 `xiaojia-Marketing-Delivery`，都可以找到本插件。
 
 ## 为什么它很强
 
@@ -126,6 +136,12 @@ xiaojia-Marketing-Delivery
 ```bash
 dsh plugin --profile web add dsh-xiaojia-marketing-delivery
 dsh web
+```
+
+确认 npm 上的公开版本：
+
+```bash
+npm view dsh-xiaojia-marketing-delivery version
 ```
 
 需要在无界面的 Harness 中调用时，安装到 `headless` profile：
