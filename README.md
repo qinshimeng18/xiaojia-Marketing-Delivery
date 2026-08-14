@@ -5,6 +5,7 @@
 ![Campaign Planning](https://img.shields.io/badge/Campaign-Planning-blue)
 ![GitHub Install](https://img.shields.io/badge/Install-From%20GitHub-success)
 ![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-Plugin-4b6bfb)
+[![npm version](https://img.shields.io/npm/v/dsh-xiaojia-marketing-delivery.svg)](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery)
 
 面向真实营销交付的 AI skill 仓库。
 
@@ -12,6 +13,15 @@
 
 > [!TIP]
 > 这不是一个只会临时生成一段文案的仓库，而是一套面向真实营销交付的 skill。
+
+## 在哪里找到
+
+| 入口 | 地址 | 适合谁 |
+| --- | --- | --- |
+| npm 插件 | [`dsh-xiaojia-marketing-delivery`](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery) | DeepSeek Harness 用户，直接按包名安装 |
+| GitHub 源码 | [`qinshimeng18/xiaojia-Marketing-Delivery`](https://github.com/qinshimeng18/xiaojia-Marketing-Delivery) | 查看源码、完整文档，或安装到其他 Agent |
+
+目前最直接的查找方式是：在 npm 搜索 `dsh-xiaojia-marketing-delivery`，或在 GitHub 搜索 `xiaojia-Marketing-Delivery`。
 
 ## 这个仓库里的 skill 能做什么
 
@@ -57,6 +67,12 @@ xiaojia-Marketing-Delivery
 ```bash
 dsh plugin --profile web add dsh-xiaojia-marketing-delivery
 dsh web
+```
+
+确认 npm 上的公开版本：
+
+```bash
+npm view dsh-xiaojia-marketing-delivery version
 ```
 
 无界面调用可以安装到 `headless` profile。已有小加 Skill 登录凭证会被自动复用，原有 Codex、Claude 和 OpenClaw 安装方式不受影响。
