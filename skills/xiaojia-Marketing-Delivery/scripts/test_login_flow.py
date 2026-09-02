@@ -13,6 +13,20 @@ import _common
 
 
 class LoginFlowTests(unittest.TestCase):
+    def test_build_request_adds_optional_dev_routing_header(self):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTAI_OPENAPI_BASE_URL": "https://dev.example.com",
+                "JUSTAI_OPENAPI_X_ENV": "tcw",
+            },
+            clear=True,
+        ):
+            request = _common.build_request("/openapi/test", {}, "test-key")
+
+        self.assertEqual(request.get_header("X-env"), "tcw")
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
+
     def test_get_api_key_reads_existing_key_from_local_config_when_env_missing(self):
         with TemporaryDirectory() as tmp_dir:
             home = Path(tmp_dir)
