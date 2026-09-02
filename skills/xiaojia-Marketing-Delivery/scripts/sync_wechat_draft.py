@@ -56,7 +56,10 @@ def build_draft_payload(
         ):
             components.append(item)
     if not components:
-        raise ValueError("当前会话没有可同步的文章结果")
+        raise ValueError(
+            "当前会话没有可同步的结构化图文文章；请先让小加生成图文笔记（generate_notes），"
+            "不要使用 common/generate_plan 结果"
+        )
     if component_index <= 0 or component_index > len(components):
         raise ValueError(f"component_index 超出范围，当前共有 {len(components)} 篇文章")
 

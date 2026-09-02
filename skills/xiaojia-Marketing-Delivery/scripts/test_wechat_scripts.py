@@ -78,7 +78,7 @@ class WechatDraftScriptTests(unittest.TestCase):
         self.assertEqual(payload["title"], "第二篇")
 
     def test_build_draft_payload_rejects_missing_component(self):
-        with self.assertRaisesRegex(ValueError, "没有可同步"):
+        with self.assertRaisesRegex(ValueError, "generate_notes"):
             build_draft_payload({"result": {}})
 
     def test_build_draft_payload_rejects_out_of_range_index(self):

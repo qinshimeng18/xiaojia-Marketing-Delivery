@@ -242,7 +242,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/bind_wechat_account.py"
 
 如果管理员已经完成操作，但脚本仍显示 `pending`，请先查看微信授权页面上的失败信息，再重新发起绑定。
 
-文章生成完成后，直接用会话 ID 同步。脚本会读取文章标题、正文和图片，提交任务并等待草稿同步结果：
+文章生成完成后，直接用会话 ID 同步。该会话必须已完成 `generate_notes` 分支，并包含结构化 `note` 组件、标题、正文和至少一张图片；`common` / `generate_plan` 展示结果需先转为图文笔记。脚本会读取文章标题、正文和图片，提交任务并等待草稿同步结果：
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_wechat_draft.py" \

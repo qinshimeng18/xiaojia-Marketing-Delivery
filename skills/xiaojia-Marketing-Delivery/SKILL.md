@@ -124,7 +124,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 
 1. 用户要求绑定公众号时，先运行 `list_wechat_accounts.py` 查看当前个人或指定团队的绑定。
 2. 需要新增绑定时运行 `bind_wechat_account.py`；把授权链接交给用户，由公众号管理员在 15 分钟内完成微信授权。绑定不能静默完成。如果管理员已操作但脚本仍显示 `pending`，提示用户查看微信授权页面上的失败信息，然后重新发起绑定。
-3. 用户要求同步文章时，必须使用已经 `completed` 且包含标题、正文和至少一张图片的小加会话结果。
+3. 用户要求同步文章时，必须使用已经 `completed` 的 `generate_notes` 分支结果；结果中需有结构化 `note` 组件，并包含标题、正文和至少一张图片。`common` / `generate_plan` 的展示结果不能直接同步，需先让小加生成图文笔记。
 4. 只有一个公众号时可直接同步；有多个公众号时先让用户选择，不能猜目标账号。
 5. 运行 `sync_wechat_draft.py --conversation-id ...`。多篇文章用 `--component-index` 指定要同步的篇目。
 6. 只有脚本返回 `sync_status=done` 才能说草稿同步成功；`pending/processing/submitting` 表示仍在处理，`failed` 表示失败，`unknown` 必须提示用户去公众号后台人工核对，不能自动重试。
@@ -133,6 +133,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 ## Result Rules
 
 - `branch` 表示实际走到的营销分支，比如 `collect_info`、`confirm_info`、`generate_plan`、`generate_notes`、`generate_image`
+- 同步公众号草稿只接受 `generate_notes` 产出的结构化图文笔记；不要把 `common` / `generate_plan` 展示结果当作可同步文章
 - `result` 是首选的结构化结果
 - `text` 只作为兜底摘要
 - `conversation_id` 必须保留，用于后续续聊
