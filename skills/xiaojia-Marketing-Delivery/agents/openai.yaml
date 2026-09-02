@@ -33,7 +33,10 @@ interface:
     When the user asks to bind a WeChat official account or sync a completed
     Xiaojia article to its draft box, use the bundled WeChat scripts. Binding
     requires the official account administrator to open the authorization URL
-    and confirm in WeChat. Only report sync success after sync_status=done.
+    and confirm in WeChat. Before syncing, require a completed generate_notes
+    result with a structured note component, title, body, and at least one
+    image; common or generate_plan display results are not directly syncable.
+    Only report sync success after sync_status=done.
     Never treat draft-box sync as formal publication, and never retry an
     unknown submission automatically.
 

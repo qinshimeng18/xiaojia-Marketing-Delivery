@@ -20,6 +20,8 @@
 
 ## 草稿同步请求
 
+`sync_wechat_draft.py` 的会话输入必须来自已完成的 `generate_notes` 分支，并包含结构化 `note` 组件、标题、正文和至少一张图片。`common` / `generate_plan` 展示结果不能直接作为草稿同步输入。
+
 ```json
 {
   "title": "文章标题",
