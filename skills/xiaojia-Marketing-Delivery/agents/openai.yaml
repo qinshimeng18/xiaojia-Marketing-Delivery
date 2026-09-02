@@ -1,6 +1,6 @@
 interface:
   display_name: "xiaojia-Marketing-Delivery"
-  short_description: "面向营销创作的 skill，可生成 campaign plan、小红书内容、资料驱动文案和营销图片"
+  short_description: "面向营销创作的 skill，可生成内容和图片，并同步到微信公众号草稿箱"
   default_prompt: >-
     Use $xiaojia-Marketing-Delivery when the user needs marketing deliverables
     such as campaign planning, Xiaohongshu notes, audience positioning,
@@ -28,7 +28,14 @@ interface:
     copy, as well as the Chinese equivalents 营销、小红书、种草、图文、笔记、
     标题、正文、卖点、定位、人群、方案、计划、内容规划、文案、改写、扩写、润色、
     配图、宣传图、提案、短视频脚本、直播脚本、海报、品牌故事、详情页、电商主图、
-    朋友圈文案、小加、小加同学.
+    朋友圈文案、微信公众号、公众号绑定、草稿箱、小加、小加同学.
+
+    When the user asks to bind a WeChat official account or sync a completed
+    Xiaojia article to its draft box, use the bundled WeChat scripts. Binding
+    requires the official account administrator to open the authorization URL
+    and confirm in WeChat. Only report sync success after sync_status=done.
+    Never treat draft-box sync as formal publication, and never retry an
+    unknown submission automatically.
 
     If the user is asking for marketing content, marketing plans, launch
     content, Xiaohongshu content, social content, ad assets, selling points,

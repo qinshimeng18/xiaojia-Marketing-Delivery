@@ -25,6 +25,7 @@ MARKETING_PAYMENT_URL = "https://justailab.com/pages/agent/preview"
 API_KEY_ENV_NAME = "JUSTAI_OPENAPI_API_KEY"
 BASE_URL_ENV_NAME = "JUSTAI_OPENAPI_BASE_URL"
 TIMEOUT_ENV_NAME = "JUSTAI_OPENAPI_TIMEOUT"
+X_ENV_ENV_NAME = "JUSTAI_OPENAPI_X_ENV"
 DEFAULT_CONFIG_FILE_NAMES = (
     "~/.codex/justai-openapi-chat.json",
     "~/.claude/justai-openapi-chat.json",
@@ -112,6 +113,11 @@ def _resolve_value(
 
 def get_base_url() -> str:
     return _resolve_value(BASE_URL_ENV_NAME, "base_url", default=DEFAULT_BASE_URL).rstrip("/")
+
+
+def get_x_env() -> str:
+    """Return the optional domestic development routing value."""
+    return _resolve_value(X_ENV_ENV_NAME, "x_env")
 
 
 def get_default_timeout(home: Path | None = None) -> int:
@@ -340,6 +346,9 @@ def build_request(path: str, payload: dict, api_key: str) -> urllib.request.Requ
     }
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
+    x_env = get_x_env()
+    if x_env:
+        headers["X-Env"] = x_env
 
     return urllib.request.Request(
         url=f"{get_base_url()}{path}",
@@ -497,6 +506,51 @@ def openapi_upload_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
 def openapi_image_result(job_id: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     return open_json(
         build_request("/openapi/images/result", {"job_id": job_id}, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_wechat_binding_prepare(team_id: int | None = None, timeout: int = DEFAULT_REQUEST_TIMEOUT) -> dict:
+    payload = {"team_id": team_id} if team_id else {}
+    return open_json(
+        build_request("/openapi/wechat/bindings/prepare", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_wechat_binding_status(bind_token: str, timeout: int = DEFAULT_REQUEST_TIMEOUT) -> dict:
+    return open_json(
+        build_request(
+            "/openapi/wechat/bindings/status",
+            {"bind_token": bind_token},
+            get_api_key(timeout=timeout),
+        ),
+        timeout=timeout,
+    )
+
+
+def openapi_wechat_bindings_list(team_id: int | None = None, timeout: int = DEFAULT_REQUEST_TIMEOUT) -> dict:
+    payload = {"team_id": team_id} if team_id else {}
+    return open_json(
+        build_request("/openapi/wechat/bindings/list", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_wechat_draft_sync(payload: dict, timeout: int = DEFAULT_REQUEST_TIMEOUT) -> dict:
+    return open_json(
+        build_request("/openapi/wechat/drafts/sync", payload, get_api_key(timeout=timeout)),
+        timeout=timeout,
+    )
+
+
+def openapi_wechat_draft_status(job_id: int, timeout: int = DEFAULT_REQUEST_TIMEOUT) -> dict:
+    return open_json(
+        build_request(
+            "/openapi/wechat/drafts/status",
+            {"job_id": job_id},
+            get_api_key(timeout=timeout),
+        ),
         timeout=timeout,
     )
 

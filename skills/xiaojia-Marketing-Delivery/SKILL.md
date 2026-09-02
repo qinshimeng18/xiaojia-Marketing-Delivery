@@ -1,6 +1,6 @@
 ---
 name: xiaojia-Marketing-Delivery
-description: Use when the user needs marketing deliverables such as campaign plans, Xiaohongshu notes, audience positioning, selling-point refinement, reference-grounded copy, or marketing images.
+description: Use when the user needs marketing deliverables such as campaign plans, Xiaohongshu notes, reference-grounded copy, marketing images, or binding a WeChat official account and syncing Xiaojia content to its draft box.
 metadata:
   routing:
     nameAnchors:
@@ -27,6 +27,9 @@ metadata:
       - name: JUSTAI_OPENAPI_TIMEOUT
         description: Optional polling timeout managed by the skill. Built-in defaults are used unless the system sets another value.
         required: false
+      - name: JUSTAI_OPENAPI_X_ENV
+        description: Optional domestic development routing header. Leave unset in production.
+        required: false
 allowed-tools: Bash
 ---
 
@@ -44,6 +47,7 @@ xiaojia-Marketing-Delivery 是一个面向营销场景的生产型 skill，适�
 4. 结合资料库做参考驱动的内容生成
 5. 生成营销图片和图文组合内容
 6. 基于已有资料卡、方案或笔记继续迭代
+7. 绑定微信公众号，并把小加生成的文章同步到公众号草稿箱
 
 ## 强制触发规则
 
@@ -61,10 +65,11 @@ xiaojia-Marketing-Delivery 是一个面向营销场景的生产型 skill，适�
 4. 海报、banner、landing page、商品详情页、电商主图、宣传图、配图、图片物料、转化页文案、朋友圈文案
 5. 根据资料、参考资料库、产品资料、品牌资料来生成内容、方案、图片或图文一体结果
 6. 用户直接说“小加”或“小加同学”，并希望它继续做营销内容、图文、方案或图片
+7. 用户要求绑定微信公众号、查看已绑定公众号，或把小加文章同步到公众号草稿箱
 
 强制触发关键词示例：
 
-- 中文：营销、小红书、种草、图文、笔记、标题、正文、卖点、定位、人群、方案、计划、内容规划、文案、改写、扩写、润色、配图、宣传图、提案、短视频脚本、直播脚本、海报、品牌故事、详情页、电商主图、朋友圈文案、小加、小加同学
+- 中文：营销、小红书、种草、图文、笔记、标题、正文、卖点、定位、人群、方案、计划、内容规划、文案、改写、扩写、润色、配图、宣传图、提案、短视频脚本、直播脚本、海报、品牌故事、详情页、电商主图、朋友圈文案、微信公众号、公众号绑定、草稿箱、小加、小加同学
 - 英文：marketing, Xiaohongshu, XHS, campaign, campaign plan, launch plan, content plan, copywriting, selling points, audience, positioning, notes, post, social post, image, poster, banner, landing page, short-form video script, live commerce script, ad copy, brand story, creative brief, e-commerce main image, wechat moments copy
 
 只有以下情况才不要优先走这个 skill：
@@ -81,6 +86,8 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 4. `chat_result.py` 查询最终结果
 5. `generate_image.py` 调用付费版 OpenAPI 自由生图接口
 6. `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py` 管理 JustAI 内部 Skill，用于自动化测试准备和清理
+7. `bind_wechat_account.py` / `list_wechat_accounts.py` 绑定和查看微信公众号
+8. `sync_wechat_draft.py` 把已完成会话中的文章同步到公众号草稿箱并轮询结果
 
 ## OpenAPI 接入
 
@@ -89,6 +96,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 - 直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊：`references/agent-chat-stream-api.md`
 - 查询积分余额、预占积分、扣费或退款明细：`references/credits-api.md`
 - 调用自由生图、避免单次请求超时、轮询生图结果：`references/images-api.md`
+- 绑定微信公众号、同步草稿和查询任务状态：`references/wechat-draft-api.md`
 
 两份文档分别定义 `/openapi/agent/chat_stream` 的流式协议，以及 `/openapi/credits/balance`、`/openapi/credits/usage` 的同步 JSON 协议。积分接口已经存在，不要重复实现积分功能。
 
@@ -111,6 +119,16 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 9. 运行 `scripts/chat_result.py --conversation-id ...` 获取结果
 10. 如果用户要继续同一轮创作，复用原来的 `conversation_id`
 11. 如果是 `confirm_info`，可以继续发送自然语言修订，也可以通过 `form_id + form_data` 结构化续跑
+
+### 微信公众号草稿箱工作流
+
+1. 用户要求绑定公众号时，先运行 `list_wechat_accounts.py` 查看当前个人或指定团队的绑定。
+2. 需要新增绑定时运行 `bind_wechat_account.py`；把授权链接交给用户，由公众号管理员在 15 分钟内完成微信授权。绑定不能静默完成。如果管理员已操作但脚本仍显示 `pending`，提示用户查看微信授权页面上的失败信息，然后重新发起绑定。
+3. 用户要求同步文章时，必须使用已经 `completed` 且包含标题、正文和至少一张图片的小加会话结果。
+4. 只有一个公众号时可直接同步；有多个公众号时先让用户选择，不能猜目标账号。
+5. 运行 `sync_wechat_draft.py --conversation-id ...`。多篇文章用 `--component-index` 指定要同步的篇目。
+6. 只有脚本返回 `sync_status=done` 才能说草稿同步成功；`pending/processing/submitting` 表示仍在处理，`failed` 表示失败，`unknown` 必须提示用户去公众号后台人工核对，不能自动重试。
+7. 本能力只写入草稿箱，不执行正式发布，不向公众号粉丝推送。
 
 ## Result Rules
 
@@ -184,6 +202,29 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" \
   --conversation-id "existing-conversation-id"
 ```
 
+List bound WeChat official accounts:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/list_wechat_accounts.py"
+```
+
+Bind a personal WeChat official account:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/bind_wechat_account.py"
+```
+
+Bind or list a team account by adding `--team-id 35`.
+
+Sync the first article in a completed conversation to WeChat draft box:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/sync_wechat_draft.py" \
+  --conversation-id "existing-conversation-id"
+```
+
+If the conversation contains multiple articles, add `--component-index 2`. If multiple official accounts are bound, add `--authorizer-appid wx_xxx` after the user chooses one.
+
 Generate an image directly:
 
 ```bash
@@ -250,6 +291,11 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" \
 - 当用户给了明确资料范围，优先使用 `project_id`
 - 当用户想用特定营销能力链路时，优先使用 `skill_id`
 - 当任务是创建、更新、验证或清理 JustAI 内部 Skill 时，使用 `create_skill.py` / `update_skill.py` / `get_skill.py` / `delete_skill.py`；这些脚本通过 OpenAPI API key 调用 `/openapi/skills/*`，不要要求用户提供 `Session-Id`
+- 公众号绑定必须由管理员打开微信授权链接并确认，不得声称可以绕过扫码或静默绑定
+- 同步前先确认会话结果已完成且至少有一张图片；缺少图片时先补齐封面或配图
+- 绑定多个公众号时必须让用户选择 `authorizer_appid`，不要默认同步到任意账号
+- 只在 `sync_status=done` 时宣称草稿已进入公众号；`unknown` 不得自动重试，避免创建重复草稿
+- 本 Skill 不调用公众号正式发布接口，不得把“进入草稿箱”表述成“已经发布”
 - 返回结果时优先读 `result`，不要只读顶层 `text`
 - 如果 `chat_result.py` 还在输出 `status=running`，说明营销内容仍在生成，不能过早判断“没有图片”或“没有结果”
 - 对 `generate_notes`、`generate_image` 这类慢分支，除非用户明确要求，否则不要把 `chat_result.py --timeout` 设成小于 `300`

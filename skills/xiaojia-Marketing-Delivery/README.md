@@ -10,7 +10,7 @@
 
 把营销需求直接推进成可交付结果的 AI skill。
 
-`xiaojia-Marketing-Delivery` 不是一个只会陪你聊天的通用助手。它面向真实营销场景设计，目标很直接：把你脑子里的想法、你手里的资料、你已有的上下文，推进成更接近可发布状态的营销方案、小红书图文笔记、卖点表达、内容方向和营销图片。
+`xiaojia-Marketing-Delivery` 不是一个只会陪你聊天的通用助手。它面向真实营销场景设计，目标很直接：把你脑子里的想法、你手里的资料、你已有的上下文，推进成更接近可发布状态的营销方案、图文内容和营销图片，并可同步到微信公众号草稿箱。
 
 如果你要的是“给我一个结果”，而不是“我们先泛泛聊聊”，这就是为你准备的 skill。
 
@@ -39,6 +39,7 @@
 | 参考资料驱动 | 基于资料库生成，不脱离事实乱写 |
 | 会话内持续迭代 | 在已有方案、资料卡和会话上继续改写 |
 | 结果可追踪 | 同时返回内容、图片链接和网页版结果链接 |
+| 公众号草稿同步 | 绑定自己的公众号，把小加文章同步到草稿箱 |
 
 你拿到的不只是一个回答，而是一份可以继续推进、继续修改、继续交付的营销结果。
 
@@ -49,6 +50,7 @@
 - 需要批量生产小红书图文、小红书笔记和种草内容的人
 - 需要围绕资料库、产品资料、品牌资料持续产出内容的人
 - 需要边生成边迭代，而不是一次性拿一段静态文案的人
+- 需要把生成后的公众号文章直接送进公众号草稿箱的人
 
 ## 它能直接做什么
 
@@ -60,6 +62,7 @@
 | 内容提案 | 基于资料库生成参考驱动内容 |
 | 创意延展 | 生成营销图片和图文一体的结果 |
 | 持续优化 | 围绕同一条会话继续改写、补充、扩展和追问 |
+| 微信公众号 | 管理员授权绑定、一键同步草稿箱、查询同步结果 |
 
 ## 典型交付物
 
@@ -191,6 +194,7 @@ dsh web
 - [小加 Agent Chat Stream API 完整接入文档](references/agent-chat-stream-api.md)
 - [小加积分余额与消耗明细 API 文档](references/credits-api.md)
 - [小加图片生成 API 文档](references/images-api.md)
+- [微信公众号绑定与草稿箱 API 文档](references/wechat-draft-api.md)
 
 现有脚本默认使用 `chat_submit + chat_result` 提交并轮询，保持兼容。能够消费 SSE 的 AI Agent、Skill 或服务端宿主，也可以直接调用 `POST /openapi/agent/chat_stream`；宿主不能把工具增量实时展示给用户时，完整消费后一次性返回即可，不要求额外开发 CLI。
 
@@ -221,9 +225,33 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" --prompt "一张适合�
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --message "帮我做一份护肤品牌新品营销方案"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat_result.py" --conversation-id "your-conversation-id"
 python3 "${CLAUDE_SKILL_DIR}/scripts/chat.py" --conversation-id "your-conversation-id" --message "继续扩写成适合小红书发布的图文笔记"
+python3 "${CLAUDE_SKILL_DIR}/scripts/list_wechat_accounts.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/bind_wechat_account.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/sync_wechat_draft.py" --conversation-id "your-conversation-id"
 ```
 
 </details>
+
+## 同步到微信公众号草稿箱
+
+首次使用时运行绑定命令。脚本会打开或打印微信授权地址，由公众号管理员确认授权：
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/bind_wechat_account.py"
+```
+
+如果管理员已经完成操作，但脚本仍显示 `pending`，请先查看微信授权页面上的失败信息，再重新发起绑定。
+
+文章生成完成后，直接用会话 ID 同步。脚本会读取文章标题、正文和图片，提交任务并等待草稿同步结果：
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/sync_wechat_draft.py" \
+  --conversation-id "your-conversation-id"
+```
+
+一个会话有多篇文章时使用 `--component-index 2`。绑定多个公众号时，先运行 `list_wechat_accounts.py`，由用户选择后传 `--authorizer-appid wx_xxx`。团队公众号统一增加 `--team-id <团队ID>`。
+
+该能力只同步到草稿箱，不会正式发布，也不会向粉丝推送。
 
 ## 常用玩法
 
