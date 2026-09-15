@@ -2,6 +2,7 @@
 """视频方案/批准/拒绝/结果；生成仍由既有小加 Agent 执行。"""
 import argparse
 import json
+from urllib.error import HTTPError, URLError
 
 from _common import build_request, get_api_key, get_default_timeout, open_json, submit_chat
 
@@ -42,8 +43,22 @@ def main():
             payload["pending_action"] = action
             payload["stream"] = False
             path = "/openapi/agent/chat_stream"
-        result = open_json(build_request(path, payload, get_api_key(timeout=args.timeout)), timeout=args.timeout)
+        request = build_request(path, payload, get_api_key(timeout=args.timeout))
+        try:
+            result = open_json(request, timeout=args.timeout)
+        except HTTPError:
+            raise
+        except (TimeoutError, URLError, ConnectionError):
+            if args.operation != "approve":
+                raise
+            result = {
+                "status": "pending", "submission_status": "unknown",
+                "conversation_id": args.conversation_id, "action_id": args.action_id,
+                "message": "批准响应超时或连接中断，请查询视频结果，不要重复批准。",
+            }
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    if result.get("status") == "pending":
+        return 2
     return 1 if result.get("status") in {"error", "failed"} else 0
 
 

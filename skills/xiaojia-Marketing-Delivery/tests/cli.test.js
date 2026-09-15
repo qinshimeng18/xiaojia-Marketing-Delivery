@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { CLIClient, loadConfig, saveConfig, validateBaseUrl } from '../cli/api.js'
 import { publicAddress, collectArtifacts, mediaUrl } from '../cli/media.js'
-import { renderMarkdown, safe, inlineImagesSupported } from '../cli/main.js'
+import { renderMarkdown, safe, inlineImagesSupported, humanResult } from '../cli/main.js'
 import terminalImage from 'term-img'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:http'
@@ -158,4 +158,26 @@ test('JSON 预览不下载、不输出终端转义序列', async () => {
   assert.equal(result.stderr, '')
   assert.doesNotMatch(result.stdout, /\x1b/)
   assert.equal(JSON.parse(result.stdout).artifacts[0].url, 'https://example.org/a.png')
+})
+
+
+test('价格与版本更新展示嵌套方案、最新报价和确认 token', () => {
+  for (const event of ['agent_action_price_changed', 'agent_action_revision_required']) {
+    const output = humanResult({ status: 'input_required', conversation_id: 'c1', text: '旧摘要', input_required: {
+      type: 'video_confirmation', event, old_quote_credits: 10, quote_credits: 12, price_confirmation_token: 'fresh-token',
+      action: { action_id: 'a1', revision: 3, summary: '最新方案', params: { script: '最新分镜' } },
+    } }, '')
+    assert.match(output, /当前报价：12/)
+    assert.match(output, /最新分镜/)
+    assert.match(output, /--revision 3 --confirm --price-token 'fresh-token'/)
+    assert.doesNotMatch(output, /旧摘要/)
+  }
+})
+
+test('已提交与结果未知均提示查询，不提示重新批准', () => {
+  for (const status of ['accepted', 'pending']) {
+    const output = humanResult({ status, conversation_id: 'c1' }, '')
+    assert.match(output, /xiaojia video result/)
+    assert.doesNotMatch(output, /video approve/)
+  }
 })

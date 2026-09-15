@@ -282,7 +282,7 @@ function registerTools(ctx, client) {
       if (!['approve', 'reject'].includes(args.operation)) throw new Error('Unsupported video operation')
       if (args.operation === 'approve' && (args.confirmed !== true || !Number.isInteger(args.revision) || args.revision < 1)) throw new Error('Video approval requires explicit user confirmation and the current revision.')
       const pending_action = { op: `${args.operation}_pending_action`, action_id: requireText(args.action_id, 'action_id') }
-      if (args.operation === 'approve') Object.assign(pending_action, copyDefined(args, ['revision', 'price_confirmation_token']))
+      if (args.operation === 'approve') return client.approveVideo({ conversationId: conversation_id, actionId: pending_action.action_id, revision: args.revision, priceConfirmationToken: args.price_confirmation_token, signal: exec.signal })
       return client.request('/openapi/agent/chat_stream', { conversation_id, pending_action, stream: false }, { signal: exec.signal, timeoutMs: 150_000 })
     },
   }))

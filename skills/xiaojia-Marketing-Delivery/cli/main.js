@@ -149,7 +149,9 @@ export async function main(argv = process.argv.slice(2)) {
       if (!['approve', 'reject'].includes(operation) || !values.action) throw new Error('请提供 approve/reject 及 --action')
       if (operation === 'approve' && (!values.confirm || !Number.isInteger(Number(values.revision)) || Number(values.revision) < 1)) throw new Error('批准视频会产生费用，必须提供 --revision N --confirm')
       const pending = { op: `${operation}_pending_action`, action_id: values.action }
-      if (operation === 'approve') { pending.revision = Number(values.revision); if (values['price-token']) pending.price_confirmation_token = values['price-token'] }
+      if (operation === 'approve') {
+        await emit(await client.approveVideo({ conversationId: id, actionId: values.action, revision: Number(values.revision), priceConfirmationToken: values['price-token'], ...options })); return
+      }
       await emit(await client.request('/openapi/agent/chat_stream', { conversation_id: id, pending_action: pending, stream: false }, options)); return
     }
   } finally {
@@ -157,22 +159,37 @@ export async function main(argv = process.argv.slice(2)) {
   }
 }
 
-function humanResult(result, json) {
+export function humanResult(result, json) {
+  const video = result.video || result
+  const confirmation = result.input_required || video.action
+  if (confirmation && (confirmation.action_id || confirmation.action?.action_id || confirmation.type === 'video_confirmation')) {
+    const action = { ...(confirmation.action || {}), ...confirmation }
+    const conversation = result.conversation_id || video.conversation_id
+    const lines = [action.msg || action.summary || '视频方案']
+    if (action.summary && action.msg) lines.push(action.summary)
+    if (action.old_quote_credits !== undefined) lines.push(`原报价：${action.old_quote_credits} 积分`)
+    const quote = action.quote_credits ?? action.display_estimated_credits
+    if (quote !== undefined) lines.push(`当前报价：${quote} 积分`)
+    if (action.revision !== undefined) lines.push(`方案版本：${action.revision}`)
+    if (action.params?.script) lines.push('', action.params.script)
+    if (conversation && action.action_id && Number.isInteger(action.revision) && action.revision > 0 && !video.job_id && ['pending', undefined].includes(action.status)) {
+      const quoteArg = value => "'" + String(value).replaceAll("'", "'\\''") + "'"
+      let command = `xiaojia video approve ${quoteArg(conversation)} --action ${quoteArg(action.action_id)} --revision ${action.revision} --confirm`
+      if (action.price_confirmation_token) command += ` --price-token ${quoteArg(action.price_confirmation_token)}`
+      lines.push('', '请核对最新方案和费用，确认后执行：', command)
+    }
+    if (conversation) lines.push(`查询：xiaojia video result ${JSON.stringify(conversation)}`)
+    return lines.join('\n')
+  }
+  if (['accepted', 'pending'].includes(result.status) && result.conversation_id) {
+    return `${result.message || '任务正在处理，请查询结果。'}\n查询：xiaojia video result ${JSON.stringify(result.conversation_id)}`
+  }
   if (result.status === 'ok' && result.artifacts?.length) return ''
   if (typeof result.text === 'string' && result.text) return result.text
   if (typeof result.content === 'string' && result.content) return result.content
-  if (!result.input_required && !result.video && !result.action && typeof result.message === 'string') return result.message
+  if (typeof result.message === 'string') return result.message
   if (result.generation_status === 'completed' && collectArtifacts(result).length && !result.video) return '生成完成。'
-  const video = result.video || result
-  const action = video.action || result.input_required
-  if (!action || (!action.action_id && action.type !== 'video_confirmation')) return json
-  const lines = [action.summary || '视频方案', `状态：${video.generation_status || action.status || '待确认'}`, `会话：${result.conversation_id}`, `方案：${action.action_id} · 版本 ${action.revision || 1}`]
-  if (action.display_estimated_credits !== undefined) lines.push(`预计视频积分：${action.display_estimated_credits}`)
-  if (action.params?.script) lines.push('', action.params.script)
-  if (video.video_urls?.length) lines.push('', ...video.video_urls)
-  if (['pending', undefined].includes(action.status) && !video.job_id) lines.push('', `确认生成：xiaojia video approve ${result.conversation_id} --action ${action.action_id} --revision ${action.revision || 1} --confirm`)
-  if (result.web_url) lines.push('', result.web_url)
-  return lines.join('\n')
+  return json
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {

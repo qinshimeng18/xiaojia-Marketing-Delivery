@@ -194,6 +194,21 @@ export class XiaojiaClient {
     )
   }
 
+  async approveVideo({ conversationId, actionId, revision, priceConfirmationToken, signal } = {}) {
+    if (!String(conversationId || '').trim() || !String(actionId || '').trim() || !Number.isInteger(revision) || revision < 1) throw new Error('Video approval requires a conversation, action and current revision.')
+    const pending_action = { op: 'approve_pending_action', action_id: actionId, revision }
+    if (priceConfirmationToken) pending_action.price_confirmation_token = priceConfirmationToken
+    try {
+      return await this.request('/openapi/agent/chat_stream', { conversation_id: conversationId, pending_action, stream: false }, { signal, timeoutMs: 150_000 })
+    } catch (error) {
+      if (error.name !== 'AbortError' && !(error instanceof TypeError)) throw error
+      return {
+        status: 'pending', submission_status: 'unknown', conversation_id: conversationId, action_id: actionId,
+        message: '批准响应超时或连接中断，提交结果尚未确认；请查询视频结果，不要重复批准。',
+      }
+    }
+  }
+
   async generateImage({
     prompt,
     model = 'image-2',
