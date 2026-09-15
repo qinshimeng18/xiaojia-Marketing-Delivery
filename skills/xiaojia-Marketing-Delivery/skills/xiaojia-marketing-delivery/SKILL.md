@@ -23,6 +23,12 @@ description: 调用小加完整营销能力，完成营销策划、内容生成�
 - 异步提交：保存 `job_id`，之后用 `xiaojia_image_result` 查询。
 - 修改同一张图片时，保留原始主体、品牌和版式要求，明确只修改的部分。
 
+## 视频流程
+
+使用 `xiaojia_video(operation="plan", message=...)` 请求视频方案，再用 `operation="result"` 与会话 ID 读取方案。展示分镜、预计积分和 revision；只有用户明确确认后才传 `operation="approve"`、`action_id`、当前 `revision` 和 `confirmed=true`。用户拒绝时使用 reject，修改方案通过原会话续聊。版本或价格变化后重新确认，不猜确认令牌。
+
+批准返回 accepted 不代表视频生成完成；继续查询 result，只有 `generation_status=completed` 且有 `video_urls` 才交付视频。超时或结果未知时先查询，不重新创建付费任务。视频优先原生展示，不支持时给真实视频链接。
+
 ## Skill 管理
 
 `xiaojia_skills` 支持 `list`、`detail`、`create`、`update`、`delete`。创建、更新和删除会改变用户账户数据，只在用户明确要求时执行。

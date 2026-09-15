@@ -1,6 +1,6 @@
 ---
 name: xiaojia-Marketing-Delivery
-description: Use when the user needs marketing deliverables such as campaign plans, Xiaohongshu notes, reference-grounded copy, marketing images, or binding a WeChat official account and syncing Xiaojia content to its draft box.
+description: Use when the user needs marketing deliverables such as campaign plans, Xiaohongshu notes, reference-grounded copy, marketing images or videos, or binding a WeChat official account and syncing Xiaojia content to its draft box.
 metadata:
   routing:
     nameAnchors:
@@ -129,6 +129,16 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 5. 运行 `sync_wechat_draft.py --conversation-id ...`。多篇文章用 `--component-index` 指定要同步的篇目。
 6. 只有脚本返回 `sync_status=done` 才能说草稿同步成功；`pending/processing/submitting` 表示仍在处理，`failed` 表示失败，`unknown` 必须提示用户去公众号后台人工核对，不能自动重试。
 7. 本能力只写入草稿箱，不执行正式发布，不向公众号粉丝推送。
+
+### 视频生成工作流
+
+- 使用 `scripts/video.py plan --message "需求"` 请求视频方案，保存返回的 `conversation_id`；用既有 `chat_result.py` 等待方案生成，再用 `video.py result --conversation-id ID` 读取方案。
+- 将 `action.summary`、分镜、`display_estimated_credits` 和 `revision` 交给用户。方案完成不等于视频完成；视频仅在用户明确确认后批准。
+- 确认后调用 `video.py approve --conversation-id ID --action-id ACTION --revision N --confirm`。不得由 Agent 自行代替用户确认费用；价格或 revision 变化后重新展示并确认。
+- 用户拒绝时使用 `video.py reject --conversation-id ID --action-id ACTION`；修改方案通过原会话发送新需求，不编辑派生字段。
+- 用 `video.py result --conversation-id ID` 查询。仅当 `generation_status=completed` 且有 `video_urls` 时交付视频；`executing/pending/running/queued` 不是失败。超时、断线或提交结果未知时先查询，不重复批准或创建付费任务。
+- 优先使用宿主的原生视频展示能力；不支持时交付视频链接及网页版会话链接，不用脚本文案冒充生成视频。
+- 已安装 CLI 时，同样可使用 `xiaojia video plan/result/approve/reject`，详细参数见 `xiaojia --help`。
 
 ## Result Rules
 

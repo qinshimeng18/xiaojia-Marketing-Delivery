@@ -1,5 +1,34 @@
 # xiaojia-Marketing-Delivery
 
+## 小加 CLI
+
+CLI 是原有 Skill / OpenAPI 的轻量封装，不包含本地 Agent，不读取或编辑工作区文件，不执行系统命令。复杂任务由服务端小加处理。
+
+```bash
+xiaojia login
+xiaojia doctor
+xiaojia chat "帮我写一篇产品推广文案"
+xiaojia chat "继续修改" --conversation CONVERSATION_ID
+xiaojia image "生成一张小猫照片"
+xiaojia image "生成产品海报" --json
+xiaojia video plan "制作一个咖啡店宣传视频"
+xiaojia video result CONVERSATION_ID
+xiaojia video approve CONVERSATION_ID --action ACTION_ID --revision 1 --confirm
+```
+
+不带参数运行 `xiaojia` 显示帮助。其他 Agent 使用 `--json` 获取结构化结果；`--project ID` 和 `--skill ID` 可重复指定。查询已有任务使用 `chat-result CONVERSATION_ID`、`image-result JOB_ID`，不会重新提交生成。
+
+在 iTerm2 中，图片生成后自动内嵌显示原图、等比例缩放，不跳浏览器、不使用字符画。其他终端保留链接；`--no-preview` 关闭预览，`xiaojia preview HTTPS_URL` 显示已有图片、不消耗生成积分。视频返回结果链接，不宣称终端内播放。图片来自 API 结构化结果，不依赖模型附链接。采用 marked / marked-terminal、ora、term-img；不引入其他 Agent 运行时。
+
+登录仍读取 CLI 专用 `.xiaojia/config.json`，不存在时兼容既有 Skill 配置。显式覆盖使用 `XIAOJIA_BASE_URL/API_KEY`，凭证绑定服务地址。`doctor` 使用已有积分查询接口，不调用模型。原有 Skill 及其插件接口保持不变。
+
+图片、对话命令直接提交用户指定的任务，会使用小加积分；视频批准必须传当前版本和 `--confirm`，报价变化后需重新确认。失败或中断不自动重新提交。`--output FILE` 保存 JSON，`--download DIR` 保存媒体，均不覆盖已有文件。预览最多 20MB，显式下载每个最多 100MB，仅公网 HTTPS、固定 DNS、不跟随重定向、不发送 API Key；预览临时文件自动清理。
+
+退出码：0 请求成功（可能仍需业务确认）；1 请求失败；2 任务仍在进行，使用返回 ID 查询。`--json` 的 stdout 只有 JSON。旧 `run`、`sessions`、`--resume`、本地工具授权参数已移除；旧会话文件不删除，但新 CLI 不再读取或创建它们。
+
+源码测试：`npm test`。本地安装：在本目录运行 `npm install -g .`；发布前不应从 npm 旧版本获取未发布命令。
+
+
 ![AI Skill](https://img.shields.io/badge/AI%20Skill-Marketing-black)
 ![Xiaohongshu Ready](https://img.shields.io/badge/Xiaohongshu-Ready-red)
 ![Campaign Planning](https://img.shields.io/badge/Campaign-Planning-blue)

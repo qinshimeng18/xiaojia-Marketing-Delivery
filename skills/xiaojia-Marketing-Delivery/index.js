@@ -263,6 +263,29 @@ function registerTools(ctx, client) {
       return client.request('/openapi/credits/usage', payload, { signal: exec.signal })
     },
   }))
+
+  ctx.tools.register(defineTool({
+    name: 'xiaojia_video',
+    description: 'Plan a video, query results, or explicitly approve/reject a quoted plan. Approval requires the user to confirm the current revision and estimated credits; never invent consent.',
+    parameters: {
+      operation: { type: 'string', required: true, enum: ['plan', 'result', 'approve', 'reject'] },
+      message: { type: 'string' }, conversation_id: { type: 'string' },
+      action_id: { type: 'string' }, revision: { type: 'integer' },
+      confirmed: { type: 'boolean', description: 'Only true after the user explicitly confirms this plan and cost.' },
+      price_confirmation_token: { type: 'string' },
+    },
+    output: jsonOutput,
+    execute(args, exec) {
+      if (args.operation === 'plan') return client.chat({ videoPlan: true, message: `请生成视频方案并展示预计积分，等待用户确认后生成。需求：${requireText(args.message, 'message')}`, conversationId: args.conversation_id, signal: exec.signal })
+      const conversation_id = requireText(args.conversation_id, 'conversation_id')
+      if (args.operation === 'result') return client.request('/openapi/videos/result', { conversation_id }, { signal: exec.signal })
+      if (!['approve', 'reject'].includes(args.operation)) throw new Error('Unsupported video operation')
+      if (args.operation === 'approve' && (args.confirmed !== true || !Number.isInteger(args.revision) || args.revision < 1)) throw new Error('Video approval requires explicit user confirmation and the current revision.')
+      const pending_action = { op: `${args.operation}_pending_action`, action_id: requireText(args.action_id, 'action_id') }
+      if (args.operation === 'approve') Object.assign(pending_action, copyDefined(args, ['revision', 'price_confirmation_token']))
+      return client.request('/openapi/agent/chat_stream', { conversation_id, pending_action, stream: false }, { signal: exec.signal, timeoutMs: 150_000 })
+    },
+  }))
 }
 
 function registerSkill(ctx) {

@@ -1,6 +1,6 @@
 {
   "name": "dsh-xiaojia-marketing-delivery",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DeepSeek Harness plugin for the full Xiaojia marketing OpenAPI.",
   "keywords": [
     "dsh-plugin",
@@ -12,7 +12,11 @@
   ],
   "type": "module",
   "main": "index.js",
+  "bin": {
+    "xiaojia": "cli/main.js"
+  },
   "files": [
+    "cli",
     "client.js",
     "cordis.patch.yml",
     "credentials.js",
@@ -42,6 +46,12 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "marked": "15.0.12",
+    "marked-terminal": "7.3.0",
+    "ora": "8.2.0",
+    "term-img": "7.1.0"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-skill": "^0.1.0-rc.6",

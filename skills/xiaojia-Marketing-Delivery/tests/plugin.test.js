@@ -40,6 +40,7 @@ test('plugin registers the full Xiaojia tool surface and bundled skill', async (
       'xiaojia_generate_image',
       'xiaojia_image_result',
       'xiaojia_credits',
+      'xiaojia_video',
     ],
   )
   assert.equal(providers.length, 1)
@@ -79,6 +80,14 @@ test('skill create operation calls the existing OpenAPI without requiring skill_
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('video approval requires explicit confirmation and revision', async () => {
+  const { ctx, tools } = fakeContext()
+  apply(ctx, { apiKey: 'test-key' })
+  const tool = tools.find(item => item.name === 'xiaojia_video')
+  await assert.rejects(tool.execute({ operation: 'approve', conversation_id: 'c', action_id: 'a', revision: 1 }, {}), /confirmation/)
+  await assert.rejects(tool.execute({ operation: 'approve', conversation_id: 'c', action_id: 'a', confirmed: true }, {}), /revision/)
 })
 
 test('plugin uses the API key persisted by the documented login command', async t => {
