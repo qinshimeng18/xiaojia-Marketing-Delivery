@@ -120,3 +120,25 @@ test('missing API key fails before any network request', async () => {
   await assert.rejects(client.request('/openapi/projects/list', {}), /JUSTAI_OPENAPI_API_KEY/)
   assert.equal(called, false)
 })
+
+
+test('video approval returns accepted immediately without polling or reposting', async () => {
+  const calls = []
+  const client = new XiaojiaClient({ apiKey: 'key', fetchImpl: queuedFetch([jsonResponse({ status: 'accepted', job_id: 'j1', conversation_id: 'c1' })], calls) })
+  const result = await client.approveVideo({ conversationId: 'c1', actionId: 'a1', revision: 2, priceConfirmationToken: 'fresh' })
+  assert.equal(result.status, 'accepted')
+  assert.equal(calls.length, 1)
+  assert.equal(JSON.parse(calls[0].options.body).pending_action.price_confirmation_token, 'fresh')
+})
+
+test('video approval network timeout is unknown pending, not failed or retried', async () => {
+  let calls = 0
+  const client = new XiaojiaClient({ apiKey: 'key', fetchImpl: async () => { calls++; throw Object.assign(new Error('timeout'), { name: 'AbortError' }) } })
+  const result = await client.approveVideo({ conversationId: 'c1', actionId: 'a1', revision: 1 })
+  assert.equal(result.status, 'pending')
+  assert.equal(result.submission_status, 'unknown')
+  assert.equal(result.conversation_id, 'c1')
+  assert.equal(calls, 1)
+  client.fetchImpl = async () => jsonResponse({ status: 'error', message: 'forbidden' }, 403)
+  await assert.rejects(client.approveVideo({ conversationId: 'c1', actionId: 'a1', revision: 1 }), /forbidden/)
+})

@@ -59,6 +59,7 @@ export class XiaojiaClient {
     taskTimeoutMs = 300_000,
     pollIntervalMs = 2_000,
     fetchImpl = globalThis.fetch,
+    source = CLIENT_SOURCE,
   } = {}) {
     if (typeof fetchImpl !== 'function') throw new Error('A fetch implementation is required.')
     this.apiKey = String(apiKey || '').trim()
@@ -67,6 +68,7 @@ export class XiaojiaClient {
     this.taskTimeoutMs = positiveInteger(taskTimeoutMs, 300_000, 'taskTimeoutMs')
     this.pollIntervalMs = positiveInteger(pollIntervalMs, 2_000, 'pollIntervalMs')
     this.fetchImpl = fetchImpl
+    this.source = source
   }
 
   async request(path, payload = {}, { signal, timeoutMs } = {}) {
@@ -80,14 +82,16 @@ export class XiaojiaClient {
     timer.unref?.()
     const onAbort = () => controller.abort(signal?.reason || 'cancelled')
     signal?.addEventListener('abort', onAbort, { once: true })
+    if (signal?.aborted) onAbort()
 
     try {
       const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
         method: 'POST',
+        redirect: 'error',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
-          'X-Xiaojia-Source': CLIENT_SOURCE,
+          'X-Xiaojia-Source': this.source,
           'X-Xiaojia-Version': CLIENT_VERSION,
         },
         body: JSON.stringify(payload),
@@ -128,6 +132,7 @@ export class XiaojiaClient {
     formId = '',
     formData,
     waitForCompletion = true,
+    videoPlan = false,
     timeoutMs = this.taskTimeoutMs,
     signal,
   } = {}) {
@@ -138,12 +143,18 @@ export class XiaojiaClient {
       throw new Error('form_data must be an object.')
     }
     const payload = {}
+    if (videoPlan) payload.video_plan = true
     if (String(message).trim()) payload.message = String(message)
     if (String(conversationId).trim()) payload.conversation_id = String(conversationId).trim()
     if (projectIds.length) payload.project_id = projectIds.filter(Boolean)
     if (skillIds.length) payload.skill_id = skillIds.filter(Boolean)
     if (String(formId).trim()) payload.form_id = String(formId).trim()
     if (formData !== undefined) payload.form_data = formData
+
+    if (videoPlan) {
+      const result = await this.request('/openapi/agent/chat_stream', { ...payload, stream: false }, { signal })
+      return this.withConversationUrl(result, result.conversation_id || conversationId)
+    }
 
     const submitted = await this.request('/openapi/agent/chat_submit', payload, { signal })
     if (!waitForCompletion) return submitted
@@ -181,6 +192,21 @@ export class XiaojiaClient {
       { ...result, status: result.status || 'timeout', message: result.message || 'Xiaojia task polling timed out.' },
       conversationId,
     )
+  }
+
+  async approveVideo({ conversationId, actionId, revision, priceConfirmationToken, signal } = {}) {
+    if (!String(conversationId || '').trim() || !String(actionId || '').trim() || !Number.isInteger(revision) || revision < 1) throw new Error('Video approval requires a conversation, action and current revision.')
+    const pending_action = { op: 'approve_pending_action', action_id: actionId, revision }
+    if (priceConfirmationToken) pending_action.price_confirmation_token = priceConfirmationToken
+    try {
+      return await this.request('/openapi/agent/chat_stream', { conversation_id: conversationId, pending_action, stream: false }, { signal, timeoutMs: 150_000 })
+    } catch (error) {
+      if (error.name !== 'AbortError' && !(error instanceof TypeError)) throw error
+      return {
+        status: 'pending', submission_status: 'unknown', conversation_id: conversationId, action_id: actionId,
+        message: '批准响应超时或连接中断，提交结果尚未确认；请查询视频结果，不要重复批准。',
+      }
+    }
   }
 
   async generateImage({
