@@ -89,7 +89,37 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 7. `bind_wechat_account.py` / `list_wechat_accounts.py` 绑定和查看微信公众号
 8. `sync_wechat_draft.py` 把已完成会话中的文章同步到公众号草稿箱并轮询结果
 
-## OpenAPI 接入
+## CLI 与调用入口选择
+
+已安装 `xiaojia` 且宿主可执行命令时，可直接使用 CLI；AI 调用加 `--json`，按返回字段判断状态，不解析终端排版。先用 `xiaojia --help` 确认命令可用，再用 `xiaojia doctor --json` 检查当前服务器和凭证。未安装 CLI 时继续使用本 Skill 的 Python 脚本；有 `xiaojia_chat` 等原生插件工具时可直接使用工具，不必再安装 CLI。
+
+CLI 是原有 OpenAPI 的轻量封装，不是本地 Agent：不支持目录搜索、文件编辑、shell 执行或 `run/resume`。无参数启动只显示帮助，不进入交互聊天。
+
+```bash
+xiaojia credits --json
+xiaojia projects --json
+xiaojia skills --json
+xiaojia chat "写一段咖啡店开业文案" --json
+xiaojia chat "改得更简短" --conversation CONVERSATION_ID --json
+xiaojia chat-result CONVERSATION_ID --json
+xiaojia image "咖啡店开业海报" --model image-2 --scale 3:4 --json
+xiaojia image-result JOB_ID --json
+xiaojia video plan "视频需求" --json
+xiaojia video result CONVERSATION_ID --json
+xiaojia video approve CONVERSATION_ID --action ACTION_ID --revision N --confirm --json
+xiaojia video reject CONVERSATION_ID --action ACTION_ID --json
+```
+
+- `CONVERSATION_ID`、`JOB_ID`、`ACTION_ID`、`N` 都替换为真实响应值，不使用示例占位符。`--project ID`、`--skill ID` 可重复传入，ID 从查询结果中选择。
+- 退出码 `0` 表示调用成功，不保证任务完成；`input_required` 表示需要用户补充或确认。退出码 `2` 表示仍在处理或结果未确认，保存响应中的 ID，用对应的 `chat-result`、`image-result` 或 `video result` 查询，不能重新提交。退出码 `1` 表示参数、网络或业务错误；付费请求中断时也不能直接重发。
+- 视频返回 `accepted` / `submission_status=submitted` 只表示已受理；`pending` / `submission_status=unknown` 表示提交结果未确认。均先查询原会话。改价或改版后读取 `input_required.action`、最新报价及 `price_confirmation_token`，重新得到用户确认后再批准，并在有 token 时加 `--price-token TOKEN`。不要自动追加 `--confirm`。
+- `chat` 默认等待结果；仍返回 `running/pending/timeout` 时继续查询。`image` 同样保存 `job_id` 后按状态查询。只有真实完成且有内容/媒体时才交付，不能用退出码代替完成状态。
+- 即使返回 `completed`，若没有请求的正文或媒体、只有通用结束提示，也不能声称任务成功。保留会话 ID，报告实际缺少的结果，排查服务端错误；不要自动反复提交付费请求或自己编造内容代替。
+- 人在支持图片协议的终端（如 iTerm2）使用 `xiaojia image "描述"` 会自动内嵌原图；AI 使用 `--json` 时不会显示终端图片，应从 `artifacts` 读取 URL，并用宿主的媒体展示能力交付。`xiaojia preview HTTPS_URL` 只预览已有图片，不重新生成。普通终端不支持内嵌时显示链接；视频不承诺在终端内播放。
+- `--output FILE` 保存 JSON、`--download DIR` 下载媒体，均只在用户需要时使用，不覆盖已有文件。CLI 暂未暴露图生图参考图、结构化表单、公众号或 Skill 增删改参数；这些任务使用已有脚本或插件，不编造 CLI 参数。
+- CLI 默认使用自己的登录配置，兼容原 Skill 配置；`XIAOJIA_BASE_URL` / `XIAOJIA_API_KEY` 是显式覆盖。不要为了修复连接而把旧密钥发送到另一服务器。`doctor` 网络失败不等于未登录：先核对服务地址、网络和测试隧道；仅凭证缺失/失效时再执行 `xiaojia login`，由用户完成浏览器登录。不得输出密钥。
+
+## OpenAPI 协议参考
 
 按任务需要读取对应文档：
 
@@ -103,7 +133,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 - 宿主支持 Tool/Skill 流式输出时，可逐块展示 `message`
 - 宿主只能一次性返回 Tool 结果时，仍需完整消费 SSE，并在 `done` 后聚合交付
 - 宿主不适合维护长连接时，继续使用现有 `chat_submit + chat_result` 脚本
-- 本轮不依赖官方 CLI；`input_required` 由 AI 通过自然语言收集，再提交 `form_data`
+- CLI 不是必需依赖；`input_required` 表单由 AI 通过自然语言收集，再用支持 `form_data` 的脚本或插件提交
 - 用户询问当前积分时查询余额接口；询问某次会话消耗时使用 `conversation_id` 查询明细接口
 
 ## Workflow
