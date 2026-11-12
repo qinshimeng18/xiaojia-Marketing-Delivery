@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util'
-import { readFile, mkdir, writeFile, realpath, mkdtemp, rm } from 'node:fs/promises'
+import { readFile, mkdir, writeFile, realpath, mkdtemp, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve, basename } from 'node:path'
+import { join, resolve, basename, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CLIClient, loadConfig, login } from './api.js'
+import { validateImageUploadSize } from '../client.js'
 import { collectArtifacts, mediaUrl, downloadMedia } from './media.js'
 import { Marked } from 'marked'
 import { markedTerminal } from 'marked-terminal'
@@ -19,6 +20,7 @@ const HELP = `小加 CLI — 原有 Skill / OpenAPI 的轻量命令行封装
   xiaojia chat "继续修改" --conversation ID
   xiaojia chat-result ID                 查询已有对话结果
   xiaojia image "图片描述"                生成图片并自动内嵌显示
+  xiaojia upload-image FILE              上传本地原图到 COS
   xiaojia image-result JOB_ID            查询已有图片任务
   xiaojia preview HTTPS_URL              显示已有图片，不重新生成
   xiaojia projects | skills | credits    查询资料库、技能或积分
@@ -71,7 +73,7 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(values.json ? JSON.stringify({ help: HELP }) : HELP); return
   }
   const command = positionals[0]
-  if (!['login', 'doctor', 'chat', 'chat-result', 'image', 'image-result', 'preview', 'projects', 'skills', 'credits', 'video'].includes(command)) {
+  if (!['login', 'doctor', 'chat', 'chat-result', 'image', 'upload-image', 'image-result', 'preview', 'projects', 'skills', 'credits', 'video'].includes(command)) {
     throw new Error('未知命令；本地 Agent 已移除，请用 xiaojia chat "需求" 或 xiaojia --help')
   }
   const controller = new AbortController()
@@ -127,6 +129,18 @@ export async function main(argv = process.argv.slice(2)) {
     }
     spinner.start(command === 'image' ? '正在生成图片…' : '请求小加…')
     const options = { signal: controller.signal }
+    if (command === 'upload-image') {
+      const file = positionals[1]
+      if (!file || positionals.length !== 2) throw new Error('请提供一个本地 PNG、JPEG 或 WebP 文件路径。')
+      const types = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
+      const contentType = types[extname(file).toLowerCase()]
+      if (!contentType) throw new Error('仅支持 PNG、JPEG 或 WebP 文件。')
+      const metadata = await stat(file)
+      if (!metadata.isFile()) throw new Error('请提供本地图片文件。')
+      validateImageUploadSize(metadata.size)
+      await emit(await client.uploadImage({ filename: basename(file), contentType, bytes: await readFile(file), ...options }))
+      return
+    }
     if (['projects', 'skills', 'credits'].includes(command)) { await emit(await client.call(command === 'credits' ? '/openapi/credits/balance' : `/openapi/${command}/list`, {}, options)); return }
     if (['chat-result', 'image-result'].includes(command)) {
       if (!positionals[1]) throw new Error('缺少任务或会话 ID')

@@ -182,15 +182,29 @@ function registerTools(ctx, client) {
 
   ctx.tools.register(defineTool({
     name: 'xiaojia_upload_image',
-    description: 'Upload a PNG, JPEG, or WebP data URI to Xiaojia and return a reusable Xiaojia COS URL.',
+    description: 'Upload a PNG, JPEG, or WebP data URI directly to COS and return the confirmed Xiaojia COS URL.',
     parameters: {
       file_name: { type: 'string', required: true },
       image_base64: { type: 'string', required: true, description: 'Full data URI, for example data:image/png;base64,...' },
       content_type: { type: 'string', required: true, enum: ['image/png', 'image/jpeg', 'image/webp'] },
     },
     output: jsonOutput,
-    execute(args, exec) {
-      return client.request('/openapi/images/upload', args, { signal: exec.signal })
+    async execute(args, exec) {
+      const dataUri = /^data:([^;,]+)(?:;[^,;]+)*;base64,([\s\S]*)$/i.exec(args.image_base64.trim())
+      const declaredType = dataUri?.[1].trim().toLowerCase().replace(/^image\/jpg$/, 'image/jpeg')
+      const encoded = dataUri && declaredType === args.content_type && dataUri[2].replace(/\s/g, '')
+      const bytes = encoded ? Buffer.from(encoded, 'base64') : null
+      if (!bytes || bytes.toString('base64') !== encoded) {
+        throw new Error('invalid_image_base64: image_base64 必须是与 content_type 一致的 PNG、JPEG 或 WebP data URI，图片尚未上传。')
+      }
+      const suffix = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' }[args.content_type]
+      const stem = args.file_name.trim().split(/[\\/]/).at(-1).replace(/\.[^.]*$/, '').replace(/\0/g, '')
+      return client.uploadImage({
+        filename: (stem || 'image').slice(0, 255 - suffix.length) + suffix,
+        contentType: args.content_type,
+        bytes,
+        signal: exec.signal,
+      })
     },
   }))
 

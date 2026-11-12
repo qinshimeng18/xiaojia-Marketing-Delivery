@@ -2,7 +2,7 @@
 
 ## 小加 CLI
 
-CLI 是原有 Skill / OpenAPI 的轻量封装，不包含本地 Agent，不读取或编辑工作区文件，不执行系统命令。复杂任务由服务端小加处理。
+CLI 是原有 Skill / OpenAPI 的轻量封装，不包含本地 Agent，也不执行系统命令。上传时只读取你明确指定的图片文件；复杂任务由服务端小加处理。
 
 ```bash
 xiaojia login
@@ -199,6 +199,8 @@ dsh web
 已有 OpenClaw、Claude、Codex 等安装方式和 Python 脚本保持不变。
 
 维护者发布 npm 包前请阅读 [`PUBLISHING.md`](PUBLISHING.md)。
+
+需要上传本地原图时，执行 `xiaojia upload-image "/path/to/reference.png" --json`，然后使用返回的 `url`。插件工具 `xiaojia_upload_image` 接收现有图片 data URI，插件会解码并将原始字节直接传到 COS。
 
 ## 登录说明
 

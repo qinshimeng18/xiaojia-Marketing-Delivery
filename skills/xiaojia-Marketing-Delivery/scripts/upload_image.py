@@ -2,11 +2,11 @@
 import argparse
 import json
 
-from _common import build_image_upload_payload, get_default_timeout, openapi_upload_image
+from _common import get_default_timeout, openapi_upload_image
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Upload a local image through JustAI OpenAPI.")
+    parser = argparse.ArgumentParser(description="Upload a local original image to COS and return its confirmed URL.")
     parser.add_argument("--file", required=True, help="Local image path. Supports png, jpeg, and webp.")
     parser.add_argument(
         "--timeout",
@@ -16,10 +16,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    result = openapi_upload_image(
-        build_image_upload_payload(args.file),
-        timeout=args.timeout,
-    )
+    result = openapi_upload_image(args.file, timeout=args.timeout)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result.get("status") == "ok" else 1
 

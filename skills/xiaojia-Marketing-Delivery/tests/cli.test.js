@@ -1,11 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { CLIClient, loadConfig, saveConfig, validateBaseUrl } from '../cli/api.js'
 import { publicAddress, collectArtifacts, mediaUrl } from '../cli/media.js'
-import { renderMarkdown, safe, inlineImagesSupported, humanResult } from '../cli/main.js'
+import { renderMarkdown, safe, inlineImagesSupported, humanResult, main } from '../cli/main.js'
 import terminalImage from 'term-img'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:http'
@@ -79,7 +80,7 @@ test('原生图片协议与不支持终端的降级，不输出字符画', () =>
 })
 
 async function runCLI(args, env = {}) {
-  const child = spawn(process.execPath, [new URL('../cli/main.js', import.meta.url).pathname, ...args], { env: { ...process.env, ...env } })
+  const child = spawn(process.execPath, [fileURLToPath(new URL('../cli/main.js', import.meta.url)), ...args], { env: { ...process.env, ...env } })
   let stdout = '', stderr = ''
   child.stdout.on('data', chunk => { stdout += chunk })
   child.stderr.on('data', chunk => { stderr += chunk })
@@ -158,6 +159,36 @@ test('JSON 预览不下载、不输出终端转义序列', async () => {
   assert.equal(result.stderr, '')
   assert.doesNotMatch(result.stdout, /\x1b/)
   assert.equal(JSON.parse(result.stdout).artifacts[0].url, 'https://example.org/a.png')
+})
+
+test('CLI 上传本地原图并输出确认后的地址', async t => {
+  const home = await fixture(t)
+  const path = join(home, '原图 sample.PNG')
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aO1kAAAAASUVORK5CYII=', 'base64')
+  await writeFile(path, bytes)
+  const uploadUrl = 'https://staging.example.org/file'
+  const finalUrl = 'https://public.example.org/file.png'
+  const env = process.env
+  t.mock.method(console, 'log', () => {})
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url.endsWith('/openapi/images/upload_url')) {
+      assert.equal(JSON.parse(options.body).filename, '原图 sample.PNG')
+      return Response.json({ status: 'ok', upload_id: 'u1', upload_url: uploadUrl, method: 'PUT', headers: { 'Content-Type': 'image/png', 'x-cos-acl': 'private' } })
+    }
+    if (url === uploadUrl) {
+      assert.equal(Buffer.compare(options.body, bytes), 0)
+      return new Response(null, { status: 200 })
+    }
+    assert.ok(url.endsWith('/openapi/images/upload_complete'))
+    return Response.json({ status: 'ok', upload_id: 'u1', url: finalUrl })
+  })
+  try {
+    process.env = { ...env, HOME: home, XIAOJIA_BASE_URL: 'https://api.example.org', XIAOJIA_API_KEY: 'test-only' }
+    await main(['upload-image', path, '--json'])
+  } finally {
+    process.env = env
+  }
+  assert.equal(JSON.parse(console.log.mock.calls[0].arguments[0]).url, finalUrl)
 })
 
 

@@ -1,8 +1,14 @@
 import { randomUUID } from 'node:crypto'
 
 export const CLIENT_SOURCE = 'deepseek-harness'
-export const CLIENT_VERSION = '0.1.0'
+export const CLIENT_VERSION = '0.2.0'
 export const DEFAULT_BASE_URL = 'https://justailab.com'
+
+export function validateImageUploadSize(size) {
+  if (size <= 0 || size > 10 * 1024 * 1024) {
+    throw new Error('invalid_image_size: 请选择 1 字节至 10 MiB 的图片，尚未发起上传。')
+  }
+}
 
 const IMAGE_MODEL_KEYS = {
   'image-flash': 'google/gemini-3.1-flash-image-preview',
@@ -106,7 +112,10 @@ export class XiaojiaClient {
       }
       if (!response.ok) {
         const message = redact(responseMessage(result, `HTTP ${response.status}`), this.apiKey)
-        throw new Error(`Xiaojia OpenAPI request failed: ${message}`)
+        const error = new Error(`Xiaojia OpenAPI request failed: ${message}`)
+        if (/^[a-z][a-z0-9_]{0,63}$/.test(result?.code || '')) error.code = result.code
+        error.httpStatus = response.status
+        throw error
       }
       if (!result || typeof result !== 'object' || Array.isArray(result)) {
         throw new Error('Xiaojia returned a non-object JSON response.')
@@ -121,6 +130,68 @@ export class XiaojiaClient {
     } finally {
       clearTimeout(timer)
       signal?.removeEventListener('abort', onAbort)
+    }
+  }
+
+  async uploadImage({ filename, contentType, bytes, signal }) {
+    validateImageUploadSize(bytes.length)
+    let ticket
+    try {
+      ticket = await this.request('/openapi/images/upload_url', {
+        filename,
+        content_type: contentType,
+        size_bytes: bytes.length,
+      }, { signal })
+    } catch (error) {
+      throw new Error(`${error.code || 'upload_ticket_failed'}: ${error.message} 图片尚未发送。`)
+    }
+    if (ticket.status !== 'ok' || !ticket.upload_id || ticket.method !== 'PUT'
+        || typeof ticket.upload_url !== 'string' || !ticket.upload_url.startsWith('https://') || !ticket.headers) {
+      throw new Error('invalid_upload_ticket: 小加未返回有效的 COS 上传凭证，图片尚未发送。请检查服务版本。')
+    }
+
+    const { upload_id: uploadId, headers } = ticket
+    const confirmHint = `使用同一个 upload_id ${uploadId} 调用 /openapi/images/upload_complete 核对结果。`
+    const timeout = AbortSignal.timeout(this.requestTimeoutMs)
+    let response
+    try {
+      response = await this.fetchImpl(ticket.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': headers['Content-Type'], 'x-cos-acl': headers['x-cos-acl'] },
+        body: bytes,
+        credentials: 'omit',
+        redirect: 'error',
+        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      })
+    } catch {
+      throw new Error(`upload_put_unknown: 未取得 COS 上传结果。${confirmHint}`)
+    }
+    await response.body?.cancel()
+    if (!response.ok) {
+      throw new Error(`upload_put_rejected: COS 拒绝上传（HTTP ${response.status}），未确认成品。请检查图片或重新申请上传地址。`)
+    }
+
+    let confirmed
+    try {
+      confirmed = await this.request('/openapi/images/upload_complete', { upload_id: uploadId }, { signal })
+    } catch (error) {
+      if ([401, 403, 404, 410, 422].includes(error.httpStatus)) {
+        const action = error.httpStatus === 422 ? '请检查文件或更换参考图。'
+          : error.httpStatus === 410 ? '上传已过期，请重新申请上传地址。'
+            : '请检查 API Key 及上传归属。'
+        throw new Error(`${error.code || 'upload_confirm_rejected'}: ${error.message} ${action}`)
+      }
+      const reason = error.code ? error.message : '成品确认结果未知。'
+      throw new Error(`${error.code || 'upload_confirm_unknown'}: 原图已发送。${reason} ${confirmHint}`)
+    }
+    if (confirmed.status !== 'ok' || !confirmed.url) {
+      throw new Error(`upload_confirm_unknown: 小加未返回成品地址。${confirmHint}`)
+    }
+    return {
+      ...confirmed,
+      cos_key: new URL(confirmed.url).pathname,
+      content_type: contentType,
+      size: bytes.length,
     }
   }
 

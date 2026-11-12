@@ -134,6 +134,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 
 - 使用 `scripts/video.py plan --message "需求"` 请求视频方案，保存返回的 `conversation_id`；用既有 `chat_result.py` 等待方案生成，再用 `video.py result --conversation-id ID` 读取方案。
 - 将 `action.summary`、分镜、`display_estimated_credits` 和 `revision` 交给用户。方案完成不等于视频完成；视频仅在用户明确确认后批准。
+- 本地视频参考图使用 `video.py plan --image-file /absolute/path/reference.png`，可重复传入。脚本直传并确认后将 `upload_id` 交给视频方案接口，模型的实际参考图上限仍生效。
 - 确认后调用 `video.py approve --conversation-id ID --action-id ACTION --revision N --confirm`。不得由 Agent 自行代替用户确认费用；价格或 revision 变化后重新展示并确认。
 - 用户拒绝时使用 `video.py reject --conversation-id ID --action-id ACTION`；修改方案通过原会话发送新需求，不编辑派生字段。
 - 用 `video.py result --conversation-id ID` 查询。仅当 `generation_status=completed` 且有 `video_urls` 时交付视频；`executing/pending/running/queued` 不是失败。超时、断线或提交结果未知时先查询，不重复批准或创建付费任务。
@@ -245,7 +246,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
   --pic-scale "3:4"
 ```
 
-图生图可直接传本地图片，脚本会先调用 `/openapi/images/upload` 上传 COS，再把返回的 URL 作为参考图提交：
+图生图可直接传本地图片，脚本会申请签名、把原图 PUT 到 COS 并确认，然后将确认响应的 URL 用作参考图：
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \

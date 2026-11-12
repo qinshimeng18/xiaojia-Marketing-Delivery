@@ -90,6 +90,89 @@ test('video approval requires explicit confirmation and revision', async () => {
   await assert.rejects(tool.execute({ operation: 'approve', conversation_id: 'c', action_id: 'a', confirmed: true }, {}), /revision/)
 })
 
+test('upload tool accepts a clipboard filename and formatted data URI, and PUTs the original bytes', async t => {
+  const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47])
+  const uploadId = 'c17314bb-93d5-496b-8b85-2d9fd359ef61'
+  const putUrl = 'https://bucket.cos.example.test/staging?signature=test'
+  const finalUrl = 'https://cdn.example.test/sealed/reference.png'
+  let put = false
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url === putUrl) {
+      assert.equal(options.method, 'PUT')
+      assert.ok(bytes.equals(options.body))
+      const headers = new Headers(options.headers)
+      assert.equal(headers.get('content-type'), 'image/png')
+      assert.equal(headers.get('x-cos-acl'), 'private')
+      assert.equal(headers.has('authorization'), false)
+      put = true
+      return new Response(null, { status: 200 })
+    }
+
+    const body = JSON.parse(options.body)
+    assert.equal(options.headers.Authorization, 'Bearer test-key')
+    if (url.endsWith('/upload_url')) {
+      assert.equal(body.filename, 'clipboard.png')
+      assert.equal(body.content_type, 'image/png')
+      assert.equal(body.size_bytes, bytes.length)
+      assert.equal('image_base64' in body, false)
+      return Response.json({
+        status: 'ok', upload_id: uploadId, upload_url: putUrl, method: 'PUT',
+        headers: { 'Content-Type': 'image/png', 'x-cos-acl': 'private' },
+      })
+    }
+    assert.ok(url.endsWith('/upload_complete'))
+    assert.ok(put)
+    assert.equal(body.upload_id, uploadId)
+    return Response.json({ status: 'ok', upload_id: uploadId, url: finalUrl })
+  })
+
+  const { ctx, tools } = fakeContext()
+  apply(ctx, { apiKey: 'test-key', baseUrl: 'https://example.test' })
+  const tool = tools.find(item => item.name === 'xiaojia_upload_image')
+  const result = await tool.execute({
+    file_name: 'screenshots/clipboard',
+    image_base64: '  data:IMAGE/PNG;BASE64,\n' + bytes.toString('base64').replace(/(.{32})/g, '$1\n'),
+    content_type: 'image/png',
+  }, {})
+
+  assert.equal(result.url, finalUrl)
+  assert.equal(result.cos_key, '/sealed/reference.png')
+  assert.equal(result.upload_id, uploadId)
+})
+
+test('upload tool preserves the upload ID if confirmation must be retried', async t => {
+  const uploadId = 'c17314bb-93d5-496b-8b85-2d9fd359ef61'
+  const putUrl = 'https://bucket.cos.example.test/staging?signature=test'
+  let tickets = 0
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url === putUrl) return new Response(null, { status: 200 })
+    if (url.endsWith('/upload_url')) {
+      tickets += 1
+      return Response.json({
+        status: 'ok', upload_id: uploadId, upload_url: putUrl, method: 'PUT',
+        headers: { 'Content-Type': 'image/png', 'x-cos-acl': 'private' },
+      })
+    }
+    assert.ok(url.endsWith('/upload_complete'))
+    assert.equal(JSON.parse(options.body).upload_id, uploadId)
+    return Response.json({ status: 'error', code: 'upload_not_found', message: 'COS 尚未收到该对象' }, { status: 409 })
+  })
+
+  const { ctx, tools } = fakeContext()
+  apply(ctx, { apiKey: 'test-key', baseUrl: 'https://example.test' })
+  const tool = tools.find(item => item.name === 'xiaojia_upload_image')
+  await assert.rejects(tool.execute({
+    file_name: 'reference.png', image_base64: 'data:image/png;base64,iVBORw==', content_type: 'image/png',
+  }, {}), error => {
+    assert.match(error.message, /upload_not_found/)
+    assert.ok(error.message.includes(uploadId))
+    assert.match(error.message, /upload_complete/)
+    assert.equal(error.message.includes(putUrl), false)
+    return true
+  })
+  assert.equal(tickets, 1)
+})
+
 test('plugin uses the API key persisted by the documented login command', async t => {
   const home = await mkdtemp(join(tmpdir(), 'xiaojia-plugin-login-'))
   const configPath = join(home, '.codex', 'justai-openapi-chat.json')

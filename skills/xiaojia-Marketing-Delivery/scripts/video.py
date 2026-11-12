@@ -4,13 +4,14 @@ import argparse
 import json
 from urllib.error import HTTPError, URLError
 
-from _common import build_request, get_api_key, get_default_timeout, open_json, submit_chat
+from _common import build_request, get_api_key, get_default_timeout, open_json, openapi_upload_image
 
 
 def main():
     parser = argparse.ArgumentParser(description="小加视频生成：先方案，明确确认后付费生成")
     parser.add_argument("operation", choices=["plan", "result", "approve", "reject"])
     parser.add_argument("--message", default="")
+    parser.add_argument("--image-file", action="append", default=[], help="方案参考图，可重复传入")
     parser.add_argument("--conversation-id", default="")
     parser.add_argument("--action-id", default="")
     parser.add_argument("--revision", type=int)
@@ -18,12 +19,24 @@ def main():
     parser.add_argument("--price-token", default="")
     parser.add_argument("--timeout", type=int, default=get_default_timeout())
     args = parser.parse_args()
+    if args.image_file and args.operation != "plan":
+        parser.error("--image-file 只用于 plan")
     if args.operation == "plan":
         if not args.message.strip():
             parser.error("plan 需要 --message")
         payload = {"message": f"请生成视频方案，展示分镜和预计积分，等待确认后再生成视频。需求：{args.message}", "video_plan": True, "stream": False}
         if args.conversation_id:
             payload["conversation_id"] = args.conversation_id
+        if len(args.image_file) > 9:
+            parser.error("视频方案最多提供 9 张参考图，实际限制取决于模型")
+        if args.image_file:
+            upload_ids = []
+            for path in args.image_file:
+                result = openapi_upload_image(path, timeout=args.timeout)
+                if result.get("status") != "ok" or not result.get("upload_id"):
+                    raise SystemExit(result.get("message") or "参考图上传未完成")
+                upload_ids.append(result["upload_id"])
+            payload["reference_image_upload_ids"] = upload_ids
         result = open_json(build_request("/openapi/agent/chat_stream", payload, get_api_key(timeout=args.timeout)), timeout=args.timeout)
     else:
         if not args.conversation_id:

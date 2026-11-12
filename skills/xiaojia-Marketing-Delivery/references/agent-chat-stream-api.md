@@ -76,6 +76,7 @@ data: {"finish_reason":"stop"}
 | `skill_id` | string 或 string[] | 否 | `[]` | 预加载一个或多个小加内部 Skill |
 | `form_id` | string | 条件必填 | `""` | 回答 `input_required` 时传入 |
 | `form_data` | object | 否 | `{}` | 表单字段值，采用扁平的 `字段 key -> 值` 结构；非空时必须同时提供 `form_id` |
+| `reference_image_upload_ids` | string[] | 否 | `[]` | 视频方案参考图，最多 9 个当前用户已确认的上传 ID；详见 [原图直传](images-api.md#原图直传) |
 | `reference_conversation_id` | string 或 string[] | 否 | `[]` | 引用当前用户有权访问的历史会话 |
 | `reference_conversation_url` | string 或 string[] | 否 | `[]` | 通过小加会话 URL 引用历史会话 |
 
