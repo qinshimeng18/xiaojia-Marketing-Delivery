@@ -210,7 +210,7 @@ test('plugin uses the API key persisted by the documented login command', async 
 test('package exposes a public installable DSH bundle', async () => {
   const packageJson = JSON.parse(await readFile(resolve(packageRoot, 'package.json'), 'utf8'))
 
-  assert.equal(packageJson.name, 'dsh-xiaojia-marketing-delivery')
+  assert.equal(packageJson.name, '@qinshimeng81/dsh-xiaojia-marketing-delivery')
   assert.equal(packageJson.private, undefined)
   assert.equal(packageJson.publishConfig.access, 'public')
   assert.equal(packageJson.dsh.bundle.patch, './cordis.patch.yml')

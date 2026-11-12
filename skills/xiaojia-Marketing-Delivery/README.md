@@ -35,7 +35,7 @@ xiaojia video approve CONVERSATION_ID --action ACTION_ID --revision 1 --confirm
 ![GitHub Install](https://img.shields.io/badge/Install-From%20GitHub-success)
 ![Agent Ready](https://img.shields.io/badge/Ready%20for-Agents-orange)
 ![Web Result](https://img.shields.io/badge/Web%20Result-justailab.com-6f42c1)
-[![npm version](https://img.shields.io/npm/v/dsh-xiaojia-marketing-delivery.svg)](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery)
+[![npm version](https://img.shields.io/npm/v/@qinshimeng81/dsh-xiaojia-marketing-delivery/next)](https://www.npmjs.com/package/@qinshimeng81/dsh-xiaojia-marketing-delivery)
 
 把营销需求直接推进成可交付结果的 AI skill。
 
@@ -50,10 +50,10 @@ xiaojia video approve CONVERSATION_ID --action ACTION_ID --revision 1 --confirm
 
 | 入口 | 用途 |
 | --- | --- |
-| [npm：`dsh-xiaojia-marketing-delivery`](https://www.npmjs.com/package/dsh-xiaojia-marketing-delivery) | DeepSeek Harness 用户直接安装插件，推荐使用这个入口 |
+| [npm：`@qinshimeng81/dsh-xiaojia-marketing-delivery`](https://www.npmjs.com/package/@qinshimeng81/dsh-xiaojia-marketing-delivery) | DeepSeek Harness 用户直接安装插件，推荐使用这个入口 |
 | [GitHub：`xiaojia-Marketing-Delivery`](https://github.com/qinshimeng18/xiaojia-Marketing-Delivery) | 查看源码、完整文档，以及安装到 Codex、Claude、OpenClaw 等 Agent |
 
-在 npm 搜索 `dsh-xiaojia-marketing-delivery`，或者在 GitHub 搜索 `xiaojia-Marketing-Delivery`，都可以找到本插件。
+在 npm 搜索 `@qinshimeng81/dsh-xiaojia-marketing-delivery`，或者在 GitHub 搜索 `xiaojia-Marketing-Delivery`，都可以找到本插件。
 
 ## 为什么它很强
 
@@ -166,20 +166,20 @@ xiaojia-Marketing-Delivery
 从 npm 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add dsh-xiaojia-marketing-delivery
+dsh plugin --profile web add @qinshimeng81/dsh-xiaojia-marketing-delivery@next
 dsh web
 ```
 
 确认 npm 上的公开版本：
 
 ```bash
-npm view dsh-xiaojia-marketing-delivery version
+npm view @qinshimeng81/dsh-xiaojia-marketing-delivery@next version
 ```
 
 需要在无界面的 Harness 中调用时，安装到 `headless` profile：
 
 ```bash
-dsh plugin --profile headless add dsh-xiaojia-marketing-delivery
+dsh plugin --profile headless add @qinshimeng81/dsh-xiaojia-marketing-delivery@next
 dsh --profile headless "调用小加生成一套新品营销图文"
 ```
 
