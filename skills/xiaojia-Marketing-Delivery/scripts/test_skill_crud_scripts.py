@@ -358,7 +358,7 @@ class SkillCrudScriptTests(unittest.TestCase):
                 exit_code = generate_image_script.main()
 
         self.assertEqual(exit_code, 0)
-        self.assertTrue(upload.call_args.args[0]["image_base64"].startswith("data:image/png;base64,"))
+        self.assertEqual(upload.call_args.args[0], str(image_path))
         self.assertEqual(
             submit.call_args.args[0]["image_urls"],
             ["https://cos.justailab.xyz/media/images/reference.png"],
@@ -447,6 +447,33 @@ class SkillCrudScriptTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         poll.assert_called_once_with("job_x", timeout=7.0)
 
+    def test_upload_image_puts_raw_bytes_without_api_key_and_confirms(self):
+        issued = {
+            "status": "ok",
+            "upload_id": "upload-1",
+            "upload_url": "https://cos.example.invalid/object?q-signature=test",
+            "headers": {"Content-Type": "image/png", "x-cos-acl": "private"},
+        }
+        confirmed = {"status": "ok", "upload_id": "upload-1", "url": "https://cdn.example.invalid/image.png"}
+        with TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir) / "reference.png"
+            path.write_bytes(PNG_BYTES)
+            with patch.object(_common, "get_api_key", return_value="secret"), patch.object(
+                _common, "open_json", side_effect=[issued, confirmed],
+            ) as post, patch.object(_common.urllib.request, "urlopen") as put:
+                self.assertEqual(_common.openapi_upload_image(str(path)), confirmed)
+        first, second = [call.args[0] for call in post.call_args_list]
+        self.assertTrue(first.full_url.endswith("/openapi/images/upload_url"))
+        self.assertEqual(json.loads(first.data), {
+            "filename": "reference.png", "content_type": "image/png", "size_bytes": len(PNG_BYTES),
+        })
+        request = put.call_args.args[0]
+        self.assertEqual(request.get_method(), "PUT")
+        self.assertEqual(request.data, PNG_BYTES)
+        self.assertIsNone(request.get_header("Authorization"))
+        self.assertTrue(second.full_url.endswith("/openapi/images/upload_complete"))
+        self.assertEqual(json.loads(second.data), {"upload_id": "upload-1"})
+
     def test_openapi_skill_helpers_use_expected_endpoints(self):
         captured = []
 
@@ -474,7 +501,6 @@ class SkillCrudScriptTests(unittest.TestCase):
             _common.openapi_get_skill("skill_x", timeout=13)
             _common.openapi_delete_skill("skill_x", timeout=14)
             _common.openapi_generate_image({"prompt": "画一张图"}, timeout=15)
-            _common.openapi_upload_image({"image_base64": "data:image/png;base64,eA=="}, timeout=16)
             _common.openapi_image_result("job_x", timeout=17)
 
         self.assertEqual(
@@ -485,16 +511,14 @@ class SkillCrudScriptTests(unittest.TestCase):
                 "https://example.com/openapi/skills/detail",
                 "https://example.com/openapi/skills/delete",
                 "https://example.com/openapi/images/generate",
-                "https://example.com/openapi/images/upload",
                 "https://example.com/openapi/images/result",
             ],
         )
         self.assertEqual(captured[0]["authorization"], "Bearer demo-key")
         self.assertEqual(captured[2]["body"], {"skill_id": "skill_x"})
         self.assertEqual(captured[4]["body"], {"prompt": "画一张图"})
-        self.assertEqual(captured[5]["body"], {"image_base64": "data:image/png;base64,eA=="})
-        self.assertEqual(captured[6]["body"], {"job_id": "job_x"})
-        self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14, 15, 16, 17])
+        self.assertEqual(captured[5]["body"], {"job_id": "job_x"})
+        self.assertEqual([item["timeout"] for item in captured], [11, 12, 13, 14, 15, 17])
 
 
 if __name__ == "__main__":

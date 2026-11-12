@@ -33,7 +33,58 @@ Content-Type: application/json
 }
 ```
 
-本地图片必须先调用 `POST /openapi/images/upload`，请求体使用 `image_base64`，再把返回的 `url` 放入 `image_urls`。`generate_image.py --image-file` 已自动完成这两步；已有本服务 COS URL 时使用 `--image-url`。
+本地图片用下文的 COS 直传流程。确认返回的 `url` 放入 `image_urls`。`generate_image.py --image-file` 会自动申请、PUT 和确认；已有本服务 COS URL 时使用 `--image-url`。
+
+## 原图直传
+
+客户后端持有 API Key，向 `POST /openapi/images/upload_url` 发送 JSON。文件支持 PNG、JPEG、WebP，单图上限 10 MiB，签名有效 300 秒。同一用户的所有 Key 共用每 60 秒 30 次签发配额。申请和确认不扣积分，生图和视频仍按各自规则计费。
+
+```json
+{"filename":"reference.png","content_type":"image/png","size_bytes":204800}
+```
+
+签发响应示例（URL 与时间仅为格式示意）：
+
+```json
+{
+  "status": "ok",
+  "upload_id": "c17314bb-93d5-496b-8b85-2d9fd359ef61",
+  "upload_url": "https://<cos-upload-host>/openapi-images/staging/<key>?<signature>",
+  "method": "PUT",
+  "headers": {"Content-Type": "image/png", "x-cos-acl": "private"},
+  "expires_in": 300,
+  "expires_at": "2026-11-08T12:05:00+00:00"
+}
+```
+
+浏览器只接收本次上传的凭证，按返回的 `headers` 用原始 `File` 上传：
+
+```js
+const response = await fetch(ticket.upload_url, {
+  method: ticket.method,
+  headers: ticket.headers,
+  body: file,
+  credentials: "omit",
+});
+if (!response.ok) throw new Error(`COS PUT failed (${response.status})`);
+```
+
+同一请求的 curl 示例，`UPLOAD_URL` 为签发响应中的临时地址：
+
+```bash
+curl --fail-with-body --upload-file ./reference.png \
+  -H 'Content-Type: image/png' -H 'x-cos-acl: private' "$UPLOAD_URL"
+```
+
+浏览器和 curl 会根据原始文件生成 `Content-Length`，该值必须与申报大小相同。上传时不要用 FormData、Base64、API Key 或 Session-Id。上传域名须允许实际页面 Origin 对 `PUT` 发起 CORS 预检，并允许 `Content-Type` 与 `x-cos-acl`。
+
+PUT 成功后，客户后端带原 Bearer 鉴权调用 `POST /openapi/images/upload_complete`，请求体仅含 `{"upload_id":"…"}`。确认通过后返回 `{"status":"ok","upload_id":"…","url":"https://…/reference.png"}`。签发响应中只有写入地址，最终 URL 以确认响应为准。PUT 后即使浏览器没收到 COS 响应，客户后端也可用同一 ID 确认；临时对象尚未到达时返回 `upload_not_found`。确认最晚可在签名到期后 10 分钟内发起，审核拒绝或图片不符后须重新申请。已完成的确认可幂等重查。
+
+确认后的 URL 可公开读取，服务端会在生成入口校验新上传资产归属。最终 URL 不受 PUT 签名有效期限制，当前不约定固定保留期限。不要把临时上传签名写入日志或转发给其他会话。
+
+- 生图 `POST /openapi/images/generate` 使用确认返回的 `url`，放进 `image_urls`。
+- 视频方案 `POST /openapi/agent/chat_stream` 或 `chat_submit` 使用确认返回的 `upload_id`，放进 `reference_image_upload_ids`。例如 `{"message":"用产品图做视频方案","video_plan":true,"stream":false,"reference_image_upload_ids":["…"]}`。最多 9 个 ID，实际参考图数量由选用模型决定。生成批准继续使用既有的 `pending_action`。
+
 
 正常会在数秒内返回：
 

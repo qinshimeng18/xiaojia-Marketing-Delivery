@@ -6,7 +6,6 @@ import uuid
 from pathlib import Path
 
 from _common import (
-    build_image_upload_payload,
     get_default_timeout,
     openapi_generate_image,
     openapi_image_result,
@@ -78,19 +77,17 @@ def resolve_reference_image_urls(args, timeout: float) -> list[str]:
         for url in (args.image_url or [])
         if str(url or "").strip()
     ]
-    for image_file in args.image_file or []:
-        upload_result = openapi_upload_image(
-            build_image_upload_payload(image_file),
-            timeout=timeout,
-        )
+    image_files = args.image_file or []
+    if len(image_urls) + len(image_files) > MAX_REFERENCE_IMAGES:
+        raise SystemExit(f"At most {MAX_REFERENCE_IMAGES} reference images are supported.")
+    for image_file in image_files:
+        upload_result = openapi_upload_image(image_file, timeout=timeout)
         image_url = str(upload_result.get("url") or "").strip()
         if upload_result.get("status") != "ok" or not image_url:
             raise SystemExit(
                 upload_result.get("message") or "Failed to upload reference image."
             )
         image_urls.append(image_url)
-    if len(image_urls) > MAX_REFERENCE_IMAGES:
-        raise SystemExit(f"At most {MAX_REFERENCE_IMAGES} reference images are supported.")
     return image_urls
 
 

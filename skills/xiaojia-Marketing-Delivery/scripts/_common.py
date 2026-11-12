@@ -446,21 +446,6 @@ def build_skill_thumbnail_upload_payload(thumbnail_file: str) -> dict:
     }
 
 
-def build_image_upload_payload(image_file: str) -> dict:
-    image_path, file_data, content_type = read_local_image_file(
-        image_file,
-        field_name="--image-file",
-    )
-    if len(file_data) > IMAGE_UPLOAD_MAX_BYTES:
-        raise SystemExit("Reference image cannot exceed 10MB.")
-    encoded = base64.b64encode(file_data).decode("ascii")
-    return {
-        "file_name": image_path.name,
-        "image_base64": f"data:{content_type};base64,{encoded}",
-        "content_type": content_type,
-    }
-
-
 def openapi_create_skill(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
     return open_json(
         build_request("/openapi/skills/create", payload, get_api_key()),
@@ -496,9 +481,34 @@ def openapi_generate_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dic
     )
 
 
-def openapi_upload_image(payload: dict, timeout: int = DEFAULT_TIMEOUT) -> dict:
+def openapi_upload_image(image_file: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
+    image_path, file_data, content_type = read_local_image_file(image_file, field_name="--image-file")
+    if len(file_data) > IMAGE_UPLOAD_MAX_BYTES:
+        raise SystemExit("Reference image cannot exceed 10 MiB.")
+    api_key = get_api_key(timeout=timeout)
+    issued = open_json(
+        build_request("/openapi/images/upload_url", {
+            "filename": image_path.name,
+            "content_type": content_type,
+            "size_bytes": len(file_data),
+        }, api_key),
+        timeout=timeout,
+    )
+    if issued.get("status") != "ok":
+        raise SystemExit(issued.get("message") or "Failed to obtain an image upload URL.")
+    put = urllib.request.Request(
+        issued["upload_url"], data=file_data, headers=issued["headers"], method="PUT",
+    )
+    try:
+        with urllib.request.urlopen(put, timeout=timeout):
+            pass
+    except urllib.error.HTTPError as exc:
+        raise SystemExit(f"COS rejected the image upload (HTTP {exc.code}).") from None
+    except urllib.error.URLError:
+        raise SystemExit("Could not complete the image upload to COS.") from None
+
     return open_json(
-        build_request("/openapi/images/upload", payload, get_api_key(timeout=timeout)),
+        build_request("/openapi/images/upload_complete", {"upload_id": issued["upload_id"]}, api_key),
         timeout=timeout,
     )
 
