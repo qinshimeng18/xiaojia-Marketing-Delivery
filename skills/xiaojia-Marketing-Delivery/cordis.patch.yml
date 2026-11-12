@@ -1,6 +1,6 @@
 - insert:
     - id: xiaojia-marketing-delivery
-      name: @qinshimeng81/dsh-xiaojia-marketing-delivery
+      name: "@qinshimeng81/dsh-xiaojia-marketing-delivery"
       config:
         apiKey: !!js process.env.JUSTAI_OPENAPI_API_KEY ?? ''
         baseUrl: !!js process.env.JUSTAI_OPENAPI_BASE_URL ?? 'https://justailab.com'

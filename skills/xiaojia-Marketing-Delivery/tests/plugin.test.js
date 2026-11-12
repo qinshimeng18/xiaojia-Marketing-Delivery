@@ -214,6 +214,10 @@ test('package exposes a public installable DSH bundle', async () => {
   assert.equal(packageJson.private, undefined)
   assert.equal(packageJson.publishConfig.access, 'public')
   assert.equal(packageJson.dsh.bundle.patch, './cordis.patch.yml')
+  const patch = await readFile(resolve(packageRoot, packageJson.dsh.bundle.patch), 'utf8')
+  const moduleName = patch.match(/^\s+name: (.+)$/m)?.[1]
+  assert.ok(moduleName, 'Cordis patch declares its npm module')
+  assert.equal(JSON.parse(moduleName), packageJson.name, 'scoped module name is a quoted YAML string')
   assert.equal(packageJson.repository.directory, 'skills/xiaojia-Marketing-Delivery')
   assert.ok(packageJson.keywords.includes('dsh-plugin'))
 })
