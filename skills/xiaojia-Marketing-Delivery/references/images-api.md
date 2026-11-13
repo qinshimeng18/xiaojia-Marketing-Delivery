@@ -37,6 +37,8 @@ Content-Type: application/json
 
 ## 原图直传
 
+API Key 由小加后端签发并绑定真实用户。已有小加登录态时，可调用 `POST /openapi/key/create`（如 `{"name":"Creator Studio 接入"}`）创建常规 Key；也可通过 Skill / CLI 登录流程获取。该 Key 供客户后端调用 OpenAPI，不是腾讯云密钥；浏览器直传 COS 只使用服务端为本次文件签发的临时上传凭证。种草查询专用 Key 不支持此接口。同一账号的 Key 共用上传限流和素材归属，不会自动区分客户平台的终端用户。
+
 客户后端持有 API Key，向 `POST /openapi/images/upload_url` 发送 JSON。文件支持 PNG、JPEG、WebP，单图上限 10 MiB，签名有效 300 秒。同一用户的所有 Key 共用每 60 秒 30 次签发配额。申请和确认不扣积分，生图和视频仍按各自规则计费。
 
 ```json
@@ -76,7 +78,11 @@ curl --fail-with-body --upload-file ./reference.png \
   -H 'Content-Type: image/png' -H 'x-cos-acl: private' "$UPLOAD_URL"
 ```
 
-浏览器和 curl 会根据原始文件生成 `Content-Length`，该值必须与申报大小相同。上传时不要用 FormData、Base64、API Key 或 Session-Id。上传域名须允许实际页面 Origin 对 `PUT` 发起 CORS 预检，并允许 `Content-Type` 与 `x-cos-acl`。
+浏览器和 curl 会根据原始文件生成 `Content-Length`，该值必须与申报大小相同。上传时不要用 FormData、Base64、API Key 或 Session-Id，也不要附加业务请求拦截器的额外请求头。
+
+`https://justailab.com` 官方服务当前使用的 COS 上传桶已统一允许任意页面 Origin 对 `PUT` 发起 CORS 预检，并允许 `Content-Type` 与 `x-cos-acl`；客户无需单独登记页面域名。浏览器必须使用 `credentials: "omit"`，按响应原样使用 `upload_url` 和 `headers`，不要将签名地址替换为图片展示域名。其他环境或自建服务使用不同上传桶时，须由服务维护方独立配置 CORS。CLI / 服务端直接上传不受浏览器 CORS 限制，但仍须通过签名鉴权。
+
+跨域放行不会授予匿名写权限，临时签名仍限定对象、文件大小和有效期。签名 URL 在有效期内可能重复使用，不能当作一次性凭证，也不能写入日志或转发给其他用户。浏览器预检成功只代表跨域条件满足，仍须完成 PUT 和下述确认流程才能取得可用图片。
 
 PUT 成功后，客户后端带原 Bearer 鉴权调用 `POST /openapi/images/upload_complete`，请求体仅含 `{"upload_id":"…"}`。确认通过后返回 `{"status":"ok","upload_id":"…","url":"https://…/reference.png"}`。签发响应中只有写入地址，最终 URL 以确认响应为准。PUT 后即使浏览器没收到 COS 响应，客户后端也可用同一 ID 确认；临时对象尚未到达时返回 `upload_not_found`。确认最晚可在签名到期后 10 分钟内发起，审核拒绝或图片不符后须重新申请。已完成的确认可幂等重查。
 
