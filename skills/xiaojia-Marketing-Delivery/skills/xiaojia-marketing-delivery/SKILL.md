@@ -20,6 +20,7 @@ description: 调用小加完整营销能力，完成营销策划、内容生成�
 - 文生图：直接调用 `xiaojia_generate_image`。
 - 图生图：先确保参考图是小加 COS URL，再放入 `image_urls`。
 - 本地图片：有本地文件且可执行 CLI 时，用 `xiaojia upload-image FILE --json` 上传原图。仅使用插件工具时，将用户提供的 PNG、JPEG 或 WebP 转为 data URI 后调用 `xiaojia_upload_image`。收到确认后的 `url` 再用于生成。上传结果未知且报错给出 `upload_id` 时，使用该 ID 通过 `/openapi/images/upload_complete` 核对结果。
+- 上传原图按签发时间保留 30 天，确认结果的 `storage_expires_at` 表示使用截止；到期应重新上传。长期使用应提前下载或转存，不把上传 URL 作为永久技能封面或资料库地址；此规则不改变生成结果图片的保留方式。
 - 异步提交：保存 `job_id`，之后用 `xiaojia_image_result` 查询。
 - 修改同一张图片时，保留原始主体、品牌和版式要求，明确只修改的部分。
 

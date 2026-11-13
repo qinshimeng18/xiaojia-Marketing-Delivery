@@ -258,6 +258,8 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
 
 已有本服务 COS 图片时使用 `--image-url`。多张参考图可重复传入 `--image-file` 或 `--image-url`，最多 14 张；只支持 PNG、JPEG、WebP。不要把图片 URL 隐式塞进聊天文本来代替专用参数。
 
+OpenAPI 上传原图的使用截止时间见确认结果 `storage_expires_at`，按签发时间加 30 天计算；过期后应重新上传。需要长期保存时，在截止前下载或转存，不把该 URL 当作永久技能封面或资料库地址。生成结果图片的保留规则不受这项上传策略影响。
+
 默认生图模型是 `image-2`；普通供应商失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。内容审核失败沿用项目通用策略，提前尝试豆包一次，豆包仍失败则终止。
 脚本默认先调用线上同源的 AI 提示词增强，再提交生图；只有用户明确要求原词直出时才加 `--raw-prompt`。同一次重试应复用 `--idempotency-key`，避免重复提交和重复预占积分。
 脚本会显式发送 `wait_for_completion=false`，先提交任务再轮询结果；`--max-wait-time` 是包含休眠和查询的总预算，不要让宿主等待单个 `/images/generate` 请求完成。
