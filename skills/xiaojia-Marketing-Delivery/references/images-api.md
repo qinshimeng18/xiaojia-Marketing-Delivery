@@ -39,6 +39,8 @@ Content-Type: application/json
 
 API Key 由小加后端签发并绑定真实用户。已有小加登录态时，可调用 `POST /openapi/key/create`（如 `{"name":"Creator Studio 接入"}`）创建常规 Key；也可通过 Skill / CLI 登录流程获取。该 Key 供客户后端调用 OpenAPI，不是腾讯云密钥；浏览器直传 COS 只使用服务端为本次文件签发的临时上传凭证。种草查询专用 Key 不支持此接口。同一账号的 Key 共用上传限流和素材归属，不会自动区分客户平台的终端用户。
 
+所有业务接口统一先上传、确认取得 URL，再提交 URL 或指定的上传 ID。禁止向接口或插件工具传 Base64/data URI 文件正文；不调用旧 `POST /openapi/images/upload`、`POST /openapi/skills/upload_thumbnail`，不在技能创建中传 `thumbnail_file_data` / `file_data`。旧服务或工具仍保留这些兼容能力时，也不得以此作为本 Skill 的上传方式。
+
 客户后端持有 API Key，向 `POST /openapi/images/upload_url` 发送 JSON。文件支持 PNG、JPEG、WebP，单图上限 10 MiB，签名有效 300 秒。同一用户的所有 Key 共用每 60 秒 30 次签发配额。申请和确认不扣积分，生图和视频仍按各自规则计费。
 
 ```json
@@ -84,12 +86,19 @@ curl --fail-with-body --upload-file ./reference.png \
 
 跨域放行不会授予匿名写权限，临时签名仍限定对象、文件大小和有效期。签名 URL 在有效期内可能重复使用，不能当作一次性凭证，也不能写入日志或转发给其他用户。浏览器预检成功只代表跨域条件满足，仍须完成 PUT 和下述确认流程才能取得可用图片。
 
-PUT 成功后，客户后端带原 Bearer 鉴权调用 `POST /openapi/images/upload_complete`，请求体仅含 `{"upload_id":"…"}`。确认通过后返回 `{"status":"ok","upload_id":"…","url":"https://…/reference.png"}`。签发响应中只有写入地址，最终 URL 以确认响应为准。PUT 后即使浏览器没收到 COS 响应，客户后端也可用同一 ID 确认；临时对象尚未到达时返回 `upload_not_found`。确认最晚可在签名到期后 10 分钟内发起，审核拒绝或图片不符后须重新申请。已完成的确认可幂等重查。
+PUT 成功后，客户后端带原 Bearer 鉴权调用 `POST /openapi/images/upload_complete`，请求体仅含 `{"upload_id":"…"}`。确认通过后返回 `{"status":"ok","upload_id":"…","url":"https://…/reference.png","storage_expires_at":"2026-12-08T12:00:00+00:00"}`（时间仅为示例）。签发响应中只有写入地址，最终 URL 以确认响应为准。PUT 后即使浏览器没收到 COS 响应，客户后端也可用同一 ID 确认；临时对象尚未到达时返回 `upload_not_found`。确认最晚可在签名到期后 10 分钟内发起，审核拒绝或图片不符后须重新申请。已完成的确认可在文件使用截止前幂等重查。
 
-确认后的 URL 可公开读取，服务端会在生成入口校验新上传资产归属。最终 URL 不受 PUT 签名有效期限制，当前不约定固定保留期限。不要把临时上传签名写入日志或转发给其他会话。
+确认后的 URL 可公开读取，服务端会在生成入口校验新上传资产归属。`expires_at` 是 PUT 凭证截止时间；`storage_expires_at` 是文件使用截止时间，按服务端签发时间加 30 天计算。两者不能混用。到期重复确认返回 HTTP 410 / `upload_expired`，通过 URL 或上传 ID 提交新参考输入会返回 `invalid_reference_image`，应重新上传。
+
+兼容旧服务缺少 `storage_expires_at` 时，只使用本次新上传 URL 完成当前任务，不把字段缺失解释为永久有效；已有旧 URL 无法确认期限时重新上传，不长期复用。
+
+新上传的正式文件由服务端按 `owner_mid/YYYYMMDD` 分子目录，位于 `media/images/cos_only/openapi_image_sealed/{owner_mid}/{YYYYMMDD}/`；私有暂存保持 `openapi-images/staging/{upload_id.hex}`，兼容新旧服务确认上传。客户端原样使用返回的上传地址和最终 URL，不拼接、改写目录。日期取签发时的服务端日期，跨日确认不改目录；同一账号不同 Key 共用用户目录。旧扁平路径仍可确认，已确认旧 URL 不搬迁，同样适用 30 天保留规则。
+
+官方桶已设置暂存当前版本 1 天过期、正式当前版本 30 天过期，以及对应历史版本成为旧版本后 1 天清理；暂存未完成的分块上传也在 1 天后回收。COS 按对象最后修改时间和后台生命周期队列执行，实际物理删除不会精确发生在接口截止时刻，公开 URL 不代表永久保存。正式文件清理后，历史会话和直接使用该 URL 的技能封面也会失效。需要长期保留时应在到期前自行下载或转存。此策略仅针对 OpenAPI 上传图片，不改变生图结果和技能专用封面目录的保留规则。其他桶需要维护方另行配置生命周期。不要把临时上传签名写入日志或转发给其他会话。
 
 - 生图 `POST /openapi/images/generate` 使用确认返回的 `url`，放进 `image_urls`。
 - 视频方案 `POST /openapi/agent/chat_stream` 或 `chat_submit` 使用确认返回的 `upload_id`，放进 `reference_image_upload_ids`。例如 `{"message":"用产品图做视频方案","video_plan":true,"stream":false,"reference_image_upload_ids":["…"]}`。最多 9 个 ID，实际参考图数量由选用模型决定。生成批准继续使用既有的 `pending_action`。
+- 技能创建或更新：将确认返回的 `url` 放入 `thumbnail`；不传图片正文。`upload_image.py --file FILE` 或 `xiaojia upload-image FILE --json` 先取得 URL，再使用 `create_skill.py --thumbnail URL`，禁止 `--thumbnail-file`。该 URL 的 30 天期限不会因保存到技能而延长；长期封面需先转存至客户长期存储后使用其 URL。
 
 
 正常会在数秒内返回：

@@ -181,13 +181,20 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py"
 python3 "${CLAUDE_SKILL_DIR}/scripts/list_skills.py" --source personal --enabled all --page-size 50
 ```
 
-Create an internal Skill:
+创建技能的本地封面先上传：
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/upload_image.py" --file "/path/to/cover.png"
+```
+
+取得响应中真实的 `url` 后，再创建技能；下列 `CONFIRMED_URL` 必须替换成该 URL：
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/create_skill.py" \
   --name "自动化测试 Skill" \
   --description "用于自动化测试" \
   --prompt-file "./prompt.md" \
+  --thumbnail "CONFIRMED_URL" \
   --category "note" \
   --verify
 ```
@@ -257,6 +264,12 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/generate_image.py" \
 ```
 
 已有本服务 COS 图片时使用 `--image-url`。多张参考图可重复传入 `--image-file` 或 `--image-url`，最多 14 张；只支持 PNG、JPEG、WebP。不要把图片 URL 隐式塞进聊天文本来代替专用参数。
+
+OpenAPI 上传原图的使用截止时间见确认结果 `storage_expires_at`，按签发时间加 30 天计算；过期后应重新上传。需要长期保存时，在截止前下载或转存，不把该 URL 当作永久技能封面或资料库地址。生成结果图片的保留规则不受这项上传策略影响。
+
+旧服务缺少 `storage_expires_at` 时，只把本次新上传 URL 用于当前任务；已有旧 URL 无法确认期限则重新上传，不把缺少字段当成永久有效。
+
+所有本地图片（含技能封面）必须先按上述流程上传并确认，再向业务接口传 URL 或该接口要求的上传 ID。禁止向 OpenAPI 或插件工具传 Base64/data URI 文件正文；不要调用旧 `images/upload`、`skills/upload_thumbnail`，不要传 `thumbnail_file_data` / `file_data` 或使用 `create_skill.py --thumbnail-file`。即使工具 schema 仍保留这些兼容参数也不得使用。仅有要求 Base64 的插件上传工具且没有 CLI/文件读取能力时，先由客户端完成直传并提供 URL，不构造 Base64，也不伪造上传结果。技能创建、更新只用 `thumbnail` URL；需要长期封面时先转存到客户长期存储。`generate_image.py --image-file` 在客户端先直传再传 URL，仍可使用。
 
 默认生图模型是 `image-2`；普通供应商失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。内容审核失败沿用项目通用策略，提前尝试豆包一次，豆包仍失败则终止。
 脚本默认先调用线上同源的 AI 提示词增强，再提交生图；只有用户明确要求原词直出时才加 `--raw-prompt`。同一次重试应复用 `--idempotency-key`，避免重复提交和重复预占积分。

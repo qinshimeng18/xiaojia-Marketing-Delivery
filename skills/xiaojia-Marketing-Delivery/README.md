@@ -200,7 +200,11 @@ dsh web
 
 维护者发布 npm 包前请阅读 [`PUBLISHING.md`](PUBLISHING.md)。
 
-需要上传本地原图时，执行 `xiaojia upload-image "/path/to/reference.png" --json`，然后使用返回的 `url`。插件工具 `xiaojia_upload_image` 接收现有图片 data URI，插件会解码并将原始字节直接传到 COS。
+所有本地图片（含技能封面）统一先上传，确认取得 URL 后再调用业务接口。执行 `xiaojia upload-image "/path/to/reference.png" --json` 或 `upload_image.py --file FILE`，使用确认响应的 `url`；生图传 `image_urls`，技能创建/更新传 `thumbnail`。
+
+禁止传 Base64/data URI 文件正文，不调用旧 `images/upload`、`skills/upload_thumbnail`，不传 `thumbnail_file_data` / `file_data`，不使用 `create_skill.py --thumbnail-file`。现有 `xiaojia_upload_image` 兼容工具仍要求 data URI，不作为本规范的上传入口；仅插件可用且没有 URL 时，应由客户端先完成直传。兼容实现与字段暂留不代表允许使用。
+
+OpenAPI 上传图按签发时间保留 30 天，确认响应的 `storage_expires_at` 为使用截止，不能作为永久技能封面；长期封面先转存到客户长期存储，再传其 URL。技能创建只保存 URL，不自动转存或延期。预签名、PUT、确认和有效期见 [图片 API](references/images-api.md)。
 
 ## 登录说明
 
