@@ -94,7 +94,7 @@ Use the bundled scripts to inspect optional context, submit the task, and fetch 
 按任务需要读取对应文档：
 
 - 直接接入小加 Agent、调试 SSE、实现第三方调用方或处理表单续聊：`references/agent-chat-stream-api.md`
-- 查询积分余额、预占积分、扣费或退款明细：`references/credits-api.md`
+- 查询积分余额、预占积分、扣费或退款明细：`references/credits-api.md`（按需查询，不要轮询；定时任务同一 API Key 不低于 60 秒一次）
 - 调用自由生图、避免单次请求超时、轮询生图结果：`references/images-api.md`
 - 绑定微信公众号、同步草稿和查询任务状态：`references/wechat-draft-api.md`
 

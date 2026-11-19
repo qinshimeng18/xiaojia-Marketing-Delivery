@@ -19,5 +19,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Credits API polling guidance** — Documented that credit endpoints must not be polled or used to detect task completion; scheduled callers should query no more than once per 60 seconds per API key and honour `Retry-After` on HTTP 429.
 - **Credential reuse** — The DSH plugin reuses explicit plugin configuration, the current environment or existing Xiaojia Skill login configuration without writing credentials into a DSH profile.
 - **Python 3.7+ support** — Added `from __future__ import annotations` to support Python 3.7 and above. Previously required Python 3.10+ due to `X | Y` type annotation syntax.
