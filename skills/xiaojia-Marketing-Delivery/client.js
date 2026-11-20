@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 export const CLIENT_SOURCE = 'deepseek-harness'
-export const CLIENT_VERSION = '0.2.0'
+export const CLIENT_VERSION = '0.2.1'
 export const DEFAULT_BASE_URL = 'https://justailab.com'
 
 export function validateImageUploadSize(size) {

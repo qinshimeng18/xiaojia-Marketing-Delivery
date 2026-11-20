@@ -1,6 +1,6 @@
 {
-  "name": "dsh-xiaojia-marketing-delivery",
-  "version": "0.2.0",
+  "name": "@qinshimeng81/dsh-xiaojia-marketing-delivery",
+  "version": "0.2.1",
   "description": "DeepSeek Harness plugin for the full Xiaojia marketing OpenAPI.",
   "keywords": [
     "dsh-plugin",
