@@ -20,7 +20,7 @@ description: 调用小加完整营销能力，完成营销策划、内容生成�
 - 文生图：直接调用 `xiaojia_generate_image`。
 - 图生图：先确保参考图是小加 COS URL，再放入 `image_urls`。
 - 本地图片：用 `xiaojia upload-image FILE --json` 或完整 Skill 的 `upload_image.py --file FILE` 先直传原文件，确认取得 `url` 后再调用业务接口。禁止向 OpenAPI 或插件工具传 Base64/data URI 文件正文，不调用仍要求 `image_base64` 的兼容上传工具。仅有插件且无法上传本地文件时，先由客户端完成直传并提供 URL，不伪造地址。上传结果未知且报错给出 `upload_id` 时，使用该 ID 通过 `/openapi/images/upload_complete` 核对结果。
-- 技能封面：先按同一流程上传，再向技能创建/更新工具传 `thumbnail` URL；禁止 `thumbnail_file_data` / `file_data`、`--thumbnail-file` 和旧 `skills/upload_thumbnail`。兼容工具仍暴露这些字段也不使用；创建技能不会把 URL 转存为永久文件，长期封面先转存到客户长期存储。
+- 技能封面：先按同一流程上传，再向技能创建/更新工具传 `thumbnail` URL；禁止 `thumbnail_file_data` / `file_data`、`--thumbnail-file` 和旧 `skills/upload_thumbnail`。兼容工具仍暴露这些字段也不使用。实际封面以技能接口返回的 `data.thumbnail` 为准。
 - 上传原图按签发时间保留 30 天，确认结果的 `storage_expires_at` 表示使用截止；到期应重新上传。长期使用应提前下载或转存，不把上传 URL 作为永久技能封面或资料库地址；此规则不改变生成结果图片的保留方式。
 - 旧服务缺少 `storage_expires_at` 时，仅将本次新上传 URL 用于当前任务，不认为永久有效；无法确认期限的旧 URL 重新上传。
 - 异步提交：保存 `job_id`，之后用 `xiaojia_image_result` 查询。

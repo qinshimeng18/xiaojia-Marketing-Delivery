@@ -269,7 +269,7 @@ OpenAPI 上传原图的使用截止时间见确认结果 `storage_expires_at`，
 
 旧服务缺少 `storage_expires_at` 时，只把本次新上传 URL 用于当前任务；已有旧 URL 无法确认期限则重新上传，不把缺少字段当成永久有效。
 
-所有本地图片（含技能封面）必须先按上述流程上传并确认，再向业务接口传 URL 或该接口要求的上传 ID。禁止向 OpenAPI 或插件工具传 Base64/data URI 文件正文；不要调用旧 `images/upload`、`skills/upload_thumbnail`，不要传 `thumbnail_file_data` / `file_data` 或使用 `create_skill.py --thumbnail-file`。即使工具 schema 仍保留这些兼容参数也不得使用。仅有要求 Base64 的插件上传工具且没有 CLI/文件读取能力时，先由客户端完成直传并提供 URL，不构造 Base64，也不伪造上传结果。技能创建、更新只用 `thumbnail` URL；需要长期封面时先转存到客户长期存储。`generate_image.py --image-file` 在客户端先直传再传 URL，仍可使用。
+所有本地图片（含技能封面）必须先按上述流程上传并确认，再向业务接口传 URL 或该接口要求的上传 ID。禁止向 OpenAPI 或插件工具传 Base64/data URI 文件正文；不要调用旧 `images/upload`、`skills/upload_thumbnail`，不要传 `thumbnail_file_data` / `file_data` 或使用 `create_skill.py --thumbnail-file`。即使工具 schema 仍保留这些兼容参数也不得使用。仅有要求 Base64 的插件上传工具且没有 CLI/文件读取能力时，先由客户端完成直传并提供 URL，不构造 Base64，也不伪造上传结果。技能创建、更新传 `thumbnail` URL，实际封面以技能接口返回的 `data.thumbnail` 为准。`generate_image.py --image-file` 在客户端先直传再传 URL，仍可使用。
 
 默认生图模型是 `image-2`；普通供应商失败后自动降级到 `image-flash`，再失败降级到 `doubao-5.0`。内容审核失败沿用项目通用策略，提前尝试豆包一次，豆包仍失败则终止。
 脚本默认先调用线上同源的 AI 提示词增强，再提交生图；只有用户明确要求原词直出时才加 `--raw-prompt`。同一次重试应复用 `--idempotency-key`，避免重复提交和重复预占积分。
